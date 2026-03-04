@@ -90,6 +90,7 @@ class TrinityEngine:
 
 
 engine = TrinityEngine()
+_WHISPER_CACHE: dict[str, Any] = {}
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -142,15 +143,31 @@ def _transcribe_with_whisper(audio_path: Path) -> str:
     # Lazy import keeps startup light; model loads only when endpoint is used.
     import whisper
 
-    # Medium is usually noticeably better for Lithuanian than small.
-    model_name = os.getenv("WHISPER_MODEL", "medium")
-    model = whisper.load_model(model_name)
+    # Use a larger model locally for better Lithuanian quality.
+    # On Render free tier, keep medium unless explicitly overridden.
+    default_model = "medium" if os.getenv("RENDER") else "large-v3"
+    model_name = os.getenv("WHISPER_MODEL", default_model)
+
+    if model_name not in _WHISPER_CACHE:
+        _WHISPER_CACHE[model_name] = whisper.load_model(model_name)
+    model = _WHISPER_CACHE[model_name]
+
+    beam_size = int(os.getenv("WHISPER_BEAM_SIZE", "5"))
+    best_of = int(os.getenv("WHISPER_BEST_OF", "5"))
+    initial_prompt = os.getenv(
+        "WHISPER_INITIAL_PROMPT",
+        "Tai lietuviu kalbos transkripcija. Rasyk taisyklingai lietuviskai.",
+    )
+
     result = model.transcribe(
         str(audio_path),
         language="lt",
         task="transcribe",
         temperature=0.0,
         fp16=False,
+        beam_size=beam_size,
+        best_of=best_of,
+        initial_prompt=initial_prompt,
     )
     return str(result.get("text", "")).strip()
 
