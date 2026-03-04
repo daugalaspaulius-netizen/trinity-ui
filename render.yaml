@@ -1,0 +1,14 @@
+# Render.com deployment configuration for Trinity UI
+services:
+  - type: web
+    name: trinity-ui
+    env: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: TRINITY_ENGINE_URL
+        value: http://localhost:9000/api/chat
+      - key: PORT
+        value: 8000
+    healthCheckPath: /

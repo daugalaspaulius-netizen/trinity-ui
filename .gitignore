@@ -1,0 +1,8 @@
+﻿.venv/
+.venv-1/
+.venv-trinity/
+__pycache__/
+*.pyc
+*.log
+.env
+*.egg-info/
