@@ -22,10 +22,9 @@ COPY trinity_app/ ./trinity_app/
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV TRINITY_ENGINE_URL=http://localhost:9000/api/chat
-ENV PORT=8000
 
-# Expose port (Render uses $PORT)
-EXPOSE $PORT
+# Expose port
+EXPOSE 8000
 
-# Run with PORT from environment
-CMD uvicorn trinity_app.main:app --host 0.0.0.0 --port $PORT
+# Run with explicit Python module (more reliable than direct command)
+CMD python -m uvicorn trinity_app.main:app --host 0.0.0.0 --port 8000
