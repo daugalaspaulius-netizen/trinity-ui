@@ -45,7 +45,8 @@ class TrinityEngine:
     """
 
     def __init__(self) -> None:
-        self.remote_url = os.getenv("TRINITY_ENGINE_URL", "").strip()
+        # Prefer local Mistral backend by default for local development.
+        self.remote_url = os.getenv("TRINITY_ENGINE_URL", "http://127.0.0.1:9000/api/chat").strip()
 
     def ask(self, message: str) -> tuple[str, str]:
         message = message.strip()
@@ -141,9 +142,16 @@ def _transcribe_with_whisper(audio_path: Path) -> str:
     # Lazy import keeps startup light; model loads only when endpoint is used.
     import whisper
 
-    model_name = os.getenv("WHISPER_MODEL", "small")
+    # Medium is usually noticeably better for Lithuanian than small.
+    model_name = os.getenv("WHISPER_MODEL", "medium")
     model = whisper.load_model(model_name)
-    result = model.transcribe(str(audio_path), language="lt", task="transcribe")
+    result = model.transcribe(
+        str(audio_path),
+        language="lt",
+        task="transcribe",
+        temperature=0.0,
+        fp16=False,
+    )
     return str(result.get("text", "")).strip()
 
 

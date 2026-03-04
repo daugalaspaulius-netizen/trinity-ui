@@ -9,10 +9,80 @@ const audioFileInput = document.getElementById('audioFileInput');
 const readLastBtn = document.getElementById('readLastBtn');
 const hintEl = document.getElementById('hint');
 const engineBadge = document.getElementById('engineBadge');
+const voiceVizWrap = document.getElementById('voiceVizWrap');
+const voiceCanvas = document.getElementById('voiceCanvas');
 
 let mediaRecorder = null;
 let audioChunks = [];
 let lastAssistantMessage = '';
+let audioContext = null;
+let analyser = null;
+let analyserData = null;
+let vizFrameId = null;
+
+function startVoiceVisualization(stream) {
+  if (!voiceCanvas || !voiceVizWrap) return;
+  const canvasCtx = voiceCanvas.getContext('2d');
+  if (!canvasCtx) return;
+
+  audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  const source = audioContext.createMediaStreamSource(stream);
+  analyser = audioContext.createAnalyser();
+  analyser.fftSize = 2048;
+  analyserData = new Uint8Array(analyser.frequencyBinCount);
+  source.connect(analyser);
+
+  voiceVizWrap.hidden = false;
+
+  const draw = () => {
+    if (!analyser) return;
+    analyser.getByteTimeDomainData(analyserData);
+
+    const w = voiceCanvas.width;
+    const h = voiceCanvas.height;
+    canvasCtx.clearRect(0, 0, w, h);
+
+    canvasCtx.lineWidth = 2;
+    canvasCtx.strokeStyle = '#1f5c4d';
+    canvasCtx.beginPath();
+
+    const sliceWidth = w / analyserData.length;
+    let x = 0;
+
+    for (let i = 0; i < analyserData.length; i += 1) {
+      const v = analyserData[i] / 128.0;
+      const y = (v * h) / 2;
+      if (i === 0) {
+        canvasCtx.moveTo(x, y);
+      } else {
+        canvasCtx.lineTo(x, y);
+      }
+      x += sliceWidth;
+    }
+
+    canvasCtx.lineTo(w, h / 2);
+    canvasCtx.stroke();
+    vizFrameId = requestAnimationFrame(draw);
+  };
+
+  draw();
+}
+
+async function stopVoiceVisualization() {
+  if (vizFrameId) {
+    cancelAnimationFrame(vizFrameId);
+    vizFrameId = null;
+  }
+  if (audioContext) {
+    await audioContext.close();
+    audioContext = null;
+  }
+  analyser = null;
+  analyserData = null;
+  if (voiceVizWrap) {
+    voiceVizWrap.hidden = true;
+  }
+}
 
 function addMessage(role, text) {
   const clone = template.content.firstElementChild.cloneNode(true);
@@ -122,6 +192,7 @@ recordBtn.addEventListener('click', async () => {
 
     mediaRecorder.onstop = async () => {
       stream.getTracks().forEach((track) => track.stop());
+      await stopVoiceVisualization();
 
       const blob = new Blob(audioChunks, { type: 'audio/webm' });
       const formData = new FormData();
@@ -140,7 +211,9 @@ recordBtn.addEventListener('click', async () => {
 
         const data = await response.json();
         if (data.text?.trim()) {
-          await sendMessage(data.text);
+          messageInput.value = data.text.trim();
+          messageInput.focus();
+          hintEl.textContent = 'Transkribuota. Galite pataisyti teksta ir spausti Siusti.';
         }
       } catch {
         fallbackSpeechRecognition();
@@ -148,6 +221,7 @@ recordBtn.addEventListener('click', async () => {
     };
 
     mediaRecorder.start();
+    startVoiceVisualization(stream);
     recordBtn.disabled = true;
     stopBtn.disabled = false;
     hintEl.textContent = 'Irasymas vyksta... spauskite Stop.';
@@ -165,7 +239,7 @@ stopBtn.addEventListener('click', () => {
     mediaRecorder.stop();
     recordBtn.disabled = false;
     stopBtn.disabled = true;
-    hintEl.textContent = 'Irasymas sustabdytas. Vyksta transkripcija...';
+    hintEl.textContent = 'Irasymas sustabdytas. Vyksta transkripcija i teksto laukeli...';
   }
 });
 
@@ -186,8 +260,9 @@ function fallbackSpeechRecognition() {
 
   recognition.onresult = async (event) => {
     const text = event.results[0][0].transcript;
-    hintEl.textContent = `Transkribuota: ${text}`;
-    await sendMessage(text);
+    messageInput.value = text;
+    messageInput.focus();
+    hintEl.textContent = `Transkribuota: ${text}. Galite pataisyti ir spausti Siusti.`;
   };
 
   recognition.onerror = (event) => {
@@ -224,8 +299,9 @@ audioFileInput.addEventListener('change', async (event) => {
       return;
     }
 
-    hintEl.textContent = `Transkribuota: ${text}`;
-    await sendMessage(text);
+    messageInput.value = text;
+    messageInput.focus();
+    hintEl.textContent = `Transkribuota: ${text}. Galite pataisyti ir spausti Siusti.`;
   } catch (error) {
     hintEl.textContent = `Audio ikelimo/transkripcijos klaida: ${error.message}`;
   } finally {

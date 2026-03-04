@@ -26,6 +26,10 @@
 
     <section class="controls">
       <textarea id="messageInput" placeholder="Rasykite zinute Trinity..." rows="2"></textarea>
+      <div id="voiceVizWrap" class="voice-viz-wrap" hidden>
+        <canvas id="voiceCanvas" width="900" height="120" aria-label="Balso bangos vizualizacija"></canvas>
+        <p class="viz-label">Irasymas aktyvus</p>
+      </div>
       <div class="buttons">
         <button id="sendBtn" class="btn btn-primary">Siusti</button>
         <button id="recordBtn" class="btn btn-accent">Irasyti balsa</button>
