@@ -199,12 +199,21 @@ recordBtn.addEventListener('click', async () => {
       formData.append('file', blob, 'recording.webm');
 
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 20000);
         const response = await fetch('/api/stt', {
           method: 'POST',
-          body: formData
+          body: formData,
+          signal: controller.signal
         });
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
+          const errPayload = await response.json().catch(() => ({}));
+          hintEl.textContent = `Serverio STT nepasiekiamas (${response.status}). Perjungiu i narsykles transkripcija.`;
+          if (errPayload?.detail) {
+            console.warn('STT detail:', errPayload.detail);
+          }
           fallbackSpeechRecognition();
           return;
         }
@@ -214,8 +223,14 @@ recordBtn.addEventListener('click', async () => {
           messageInput.value = data.text.trim();
           messageInput.focus();
           hintEl.textContent = 'Transkribuota. Galite pataisyti teksta ir spausti Siusti.';
+        } else {
+          hintEl.textContent = 'Transkripcija tuscia. Perjungiu i narsykles transkripcija.';
+          fallbackSpeechRecognition();
         }
-      } catch {
+      } catch (err) {
+        if (err?.name === 'AbortError') {
+          hintEl.textContent = 'STT uztruko per ilgai. Perjungiu i narsykles transkripcija.';
+        }
         fallbackSpeechRecognition();
       }
     };

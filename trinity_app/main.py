@@ -143,9 +143,10 @@ def _transcribe_with_whisper(audio_path: Path) -> str:
     # Lazy import keeps startup light; model loads only when endpoint is used.
     import whisper
 
-    # Use a larger model locally for better Lithuanian quality.
-    # On Render free tier, keep medium unless explicitly overridden.
-    default_model = "medium" if os.getenv("RENDER") else "large-v3"
+    # Use larger model locally; use lighter default on Render free instances.
+    # Render commonly exposes RENDER_SERVICE_ID when running inside their infra.
+    is_render = bool(os.getenv("RENDER") or os.getenv("RENDER_SERVICE_ID"))
+    default_model = "small" if is_render else "large-v3"
     model_name = os.getenv("WHISPER_MODEL", default_model)
 
     if model_name not in _WHISPER_CACHE:
