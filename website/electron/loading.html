@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>EFM Go</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --accent: #00d492;                 /* EFM Go emerald green */
+      --backdrop: #0c0e14;               /* near-black charcoal */
+      --ink: #ffffff;
+      --ink-status: #8b8fa3;
+      --ink-muted: #6b6f7f;
+      --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    html, body { height: 100%; }
+    body {
+      font-family: var(--font-body);
+      background: var(--backdrop);
+      overflow: hidden;
+      -webkit-app-region: drag;
+      user-select: none;
+    }
+
+    /* The whole surface — dark with subtle emerald glow from the top.
+       Fades out as one layer when the gateway is ready. */
+    #stage {
+      position: fixed; inset: 0; overflow: hidden;
+      background:
+        radial-gradient(ellipse 80% 100% at 50% 0%,
+          color-mix(in srgb, var(--accent) 14%, transparent) 0%,
+          transparent 55%),
+        var(--backdrop);
+      opacity: 1; transition: opacity 0.5s ease;
+    }
+    #stage.gone { opacity: 0; }
+
+    /* "EFM Go" wordmark — appears on boot, fades out with the stage. */
+    #title {
+      position: absolute; left: 50%; top: 46%;
+      transform: translate(-50%, -50%);
+      z-index: 60;
+      font-size: 56px; font-weight: 600; letter-spacing: -0.02em;
+      color: var(--ink);
+      opacity: 0.88;
+      white-space: nowrap;
+    }
+
+    /* Thin accent divider under the wordmark. */
+    #accent-rule {
+      position: absolute; left: 50%; top: calc(46% + 48px);
+      transform: translateX(-50%) scaleX(0.4);
+      width: 52px; height: 2px;
+      background: var(--accent);
+      opacity: 0.5;
+      transition: transform 0.6s cubic-bezier(.2,1,.3,1);
+      will-change: transform;
+    }
+    #accent-rule.ready { transform: translateX(-50%) scaleX(1); opacity: 0.7; }
+
+    /* Status pill (bottom-centre). */
+    #status {
+      position: absolute; left: 50%; bottom: 6%; transform: translateX(-50%);
+      display: inline-flex; align-items: center; gap: 7px; z-index: 50;
+      font-size: 13px; font-weight: 500; color: var(--ink-status);
+    }
+    .dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: .25; transform: scale(.75); } 50% { opacity: 1; transform: scale(1); } }
+
+    /* Close control (same contract as before, EFM-styled).
+       See loading.html history for the full rationale. */
+    #exit {
+      position: absolute; left: 50%; bottom: calc(6% + 46px); transform: translateX(-50%);
+      z-index: 50; display: flex; flex-direction: column; align-items: center; gap: 8px;
+      width: max-content; max-width: min(88vw, 420px);
+      background: rgba(13,15,22,0.95);
+      border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+      border-radius: 14px; padding: 10px 14px;
+      opacity: 0; transition: opacity .3s ease;
+    }
+    #exit.shown { opacity: 1; }
+    #exit[hidden] { display: none; }
+    #closeWin {
+      -webkit-app-region: no-drag;
+      min-height: 32px; padding: 6px 16px; border-radius: 999px;
+      border: 1px solid color-mix(in srgb, var(--ink-status) 30%, transparent);
+      background: color-mix(in srgb, var(--ink-status) 10%, transparent);
+      color: var(--ink-status); font: 600 13px/1.3 var(--font-body); cursor: pointer;
+      white-space: normal; text-wrap: balance; text-align: center;
+    }
+    #closeWin:hover {
+      background: color-mix(in srgb, var(--ink-status) 18%, transparent);
+      border-color: color-mix(in srgb, var(--ink-status) 50%, transparent);
+    }
+    #closeWin:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    #closeHint {
+      margin: 0; text-align: center; text-wrap: balance;
+      font: 500 12px/1.4 var(--font-body); color: var(--ink-muted);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .dot { animation: none; opacity: .5; }
+      #stage, #title, #exit { transition-duration: .01s; }
+      #accent-rule { transition-duration: .01s; }
+    }
+  </style>
+</head>
+<body>
+  <div id="stage">
+    <div id="title">EFM Go</div>
+    <div id="accent-rule"></div>
+    <div id="status"><span class="dot"></span><span id="statusText">Starting gateway&hellip;</span></div>
+    <div id="exit" hidden>
+      <button id="closeWin" type="button" aria-describedby="closeHint"
+        aria-label="Close window and stop reconnecting. This connection window closes and stops trying to connect. EFM Go itself keeps running; to connect again, pick New Connection Window… from the EFM Go icon's menu.">Close window and stop reconnecting</button>
+      <p id="closeHint">This connection window closes and stops trying to connect. EFM Go itself keeps running; to connect again, pick New Connection Window… from the EFM Go icon's menu.</p>
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    "use strict";
+
+    // ── Startup timing ──
+    if (window.__startupTiming) window.__startupTiming("splash_dom_ready");
+
+    // ── Per-user accent, injected by the Electron main process as a query param.
+    //     Falls back to the EFM Go emerald green. ──
+    var accent = "#00d492";
+    try {
+      var q = new URLSearchParams(location.search).get("accent");
+      if (q && /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(q)) accent = q;
+    } catch (e) {}
+    document.documentElement.style.setProperty("--accent", accent);
+
+    var stage = document.getElementById("stage");
+    var statusText = document.getElementById("statusText");
+    var accentRule = document.getElementById("accent-rule");
+
+    var ready = false, resolved = false, finished = false, startedAt = performance.now();
+    var latestStatus = "Starting gateway\u2026";
+    var MIN_FLOOR_MS = 1200;   /* never hand off before this (no sub-second flash) */
+
+    // ── gateway signalled ready ──
+    function markReady() {
+      ready = true; latestStatus = "Connected \u2713"; statusText.textContent = latestStatus;
+      if (window.__startupTiming) window.__startupTiming("splash_mark_ready");
+      if (exit) exit.hidden = true;
+      maybeResolve();
+    }
+    function maybeResolve() {
+      if (resolved || !ready) return;
+      var elapsed = performance.now() - startedAt;
+      if (elapsed < MIN_FLOOR_MS) { setTimeout(maybeResolve, MIN_FLOOR_MS - elapsed + 20); return; }
+      resolve();
+    }
+    function resolve() {
+      resolved = true;
+      if (window.__startupTiming) window.__startupTiming("splash_resolve");
+      accentRule.classList.add("ready");
+      setTimeout(fadeOut, 900);
+    }
+    function fadeOut() {
+      if (finished) return; finished = true;
+      if (window.__startupTiming) window.__startupTiming("splash_fade_complete");
+      var done = false;
+      function notifyMain() {
+        if (done) return; done = true;
+        try { if (window.electronAPI && window.electronAPI.bootComplete) window.electronAPI.bootComplete(); } catch (e) {}
+      }
+      stage.addEventListener("transitionend", function (e) { if (e.propertyName === "opacity") notifyMain(); }, { once: true });
+      stage.classList.add("gone");
+      setTimeout(notifyMain, 700);
+    }
+
+    // ── gateway status / ready signals from the Electron main process ──
+    if (window.electronAPI && window.electronAPI.onStatus) {
+      window.electronAPI.onStatus(function (msg) {
+        if (msg) latestStatus = msg;
+        if (!ready) statusText.textContent = latestStatus;
+      });
+    }
+    if (window.electronAPI && window.electronAPI.onBootReady) {
+      window.electronAPI.onBootReady(markReady);
+    } else {
+      // Browser preview (no Electron): auto-signal ready so the whole reveal plays.
+      var d = 2500;
+      try { var r = new URLSearchParams(location.search).get("ready"); if (r != null) d = Math.max(0, parseInt(r, 10) || 0); } catch (e) {}
+      setTimeout(markReady, d);
+    }
+
+    // ── close control (same logic as before, EFM-branded) ──
+    var COLD_BOOT_STALL_MS = 15000;
+    var TRAY_LOCATION = {
+      darwin: "the EFM Go icon in the menu bar, at the top-right of the screen",
+      win32: "the EFM Go icon in the notification area next to the clock (it may sit behind the ^ chevron)"
+    };
+    function closeHintFor(primary, platform) {
+      if (!primary) return "This connection window closes and stops trying to connect. EFM Go itself keeps running; to connect again, pick New Connection Window… from the EFM Go icon's menu.";
+      var where = TRAY_LOCATION[platform] || "the EFM Go icon in the system tray";
+      return "This window closes; EFM Go keeps running and keeps trying to connect in the background. Bring the window back from " + where + ".";
+    }
+    function closeLabelFor(primary) {
+      return primary ? "Close window" : "Close window and stop reconnecting";
+    }
+    var exit = document.getElementById("exit");
+    var closeWin = document.getElementById("closeWin");
+    var closeHint = document.getElementById("closeHint");
+    var bridge = window.kirocrew;
+    var reconnect = false;
+    var primary = false;
+    try {
+      var splashQuery = new URLSearchParams(location.search);
+      reconnect = splashQuery.get("reconnect") === "1";
+      primary = splashQuery.get("primary") === "1";
+    } catch (e) {}
+    function revealExit() {
+      if (ready) return;
+      exit.hidden = false;
+      requestAnimationFrame(function () { exit.classList.add("shown"); });
+    }
+    if (exit && closeWin && bridge && typeof bridge.windowControl === "function" && !bridge.linuxFrameless) {
+      var label = closeLabelFor(primary);
+      var hint = closeHintFor(primary, bridge.platform);
+      closeWin.textContent = label;
+      closeHint.textContent = hint;
+      closeWin.setAttribute("aria-label", label + ". " + hint);
+      closeWin.addEventListener("click", function () { bridge.windowControl("close"); });
+      if (reconnect) revealExit();
+      else setTimeout(revealExit, COLD_BOOT_STALL_MS);
+    }
+  })();
+  </script>
+</body>
+</html>

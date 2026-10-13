@@ -1,0 +1,252 @@
+# Error Handling
+
+## Principles
+
+1. Custom exceptions in `acp/transport_errors.py` (re-exported by `acp/client.py`)
+   for ACP protocol/prompt errors, in `acp/session_handle.py` for runtime/transport
+   errors, and in `acp/runtime.py` for runtime binding and session-start errors
+2. Error strings at CLI boundaries (never expose tracebacks to users)
+3. Graceful degradation — partial output returned on timeout
+
+## Exception Hierarchy
+
+Two independent families. `AcpError` covers protocol and prompt-level failures;
+`AcpRuntimeError` covers the process and request transport underneath it.
+
+```
+AcpError (base, acp/transport_errors.py) — carries `transient`, the retry verdict
+├── AcpTimeoutError        — prompt timed out, has partial_output
+├── AcpPermissionNeeded    — tool approval required
+├── AcpProcessDied         — kiro-cli exited unexpectedly
+│   └── AcpRegistrationRateLimited — the death's stderr shows a throttled
+│                            dynamic registration (HTTP 429); transient, so the
+│                            retry ladders recover it instead of surfacing a
+│                            terminal generic death. Classified only while the
+│                            session has produced no text and run no tool, so
+│                            the verdict can never license a replay that
+│                            repeats side effects. An ambiguous-delivery death
+│                            (a stdin stall with the child alive) is never
+│                            this subclass: it stays a non-transient
+│                            AcpProcessDied with ambiguous_delivery set
+├── AcpAuthRequired        — kiro-cli not authenticated; non-retryable
+├── AcpSandboxInitFailed   — an OS sandbox refused to initialize; non-retryable
+├── AcpToolGateUnroutable  — tool calls would bypass the PreToolUse gate;
+│                            non-retryable, wraps acp_tool_gate.ToolGateUnroutable
+├── PiGateExtensionTampered — the shipped Pi gate extension failed its digest check
+├── AcpModelUnavailable    — requested model not entitled; non-retryable
+└── AcpPromptBusy          — a prompt is already in flight on this session
+
+AcpRuntimeError (base, acp/session_handle.py)
+├── AcpRuntimeDead            — the underlying process has died
+├── AcpRequestTimeout         — a request's response missed its budget
+│   └── AcpSessionStartTimeout — `session/new` timed out while a collector owns
+│                                the possible late result (acp/runtime.py)
+└── AcpWorkspaceBindingError  — descriptor-bound runtime cannot serve another cwd
+    └── AcpToolSurfaceBindingError — a shared runtime cannot safely serve the
+                                     requested tool surface (acp/runtime.py)
+```
+
+`AcpToolGateUnroutable` is a distinct type rather than a transport error because
+the condition is a configuration fact: a respawn re-reads the same answer and
+refuses again while consuming a reconnect budget meant for transport faults. The
+same argument makes `AcpAuthRequired` and `AcpModelUnavailable` distinct — each
+one is invalid on its own terms, so the retry ladder must be skipped rather than
+walked. `AcpRequestTimeout` subclasses its base so existing
+`except AcpRuntimeError` handlers keep catching it.
+
+**A retry DROPPED after its backoff hands back everything it counted before it.**
+A spent one-shot silently disarms the next real recovery; a counted attempt
+shortens the next ladder and inflates its backoff seed, both for a retry that
+never reached the provider. A no-requeue exit ENDS the turn, so it owes the same
+per-turn budget refresh the landed and terminal arms do -- the whole ladder, not a
+decrement, because an arm that already spent attempts 1..2 would otherwise stay
+permanently short. The pending "retrying..." card is corrected by APPENDING a
+give-up row rather than retracted, so the affordance to continue comes back
+instead of the row simply disappearing.
+
+## Boundaries
+
+| Boundary | Strategy |
+|----------|----------|
+| ACP → CLI | Catch `AcpError`, print user-friendly message, `sys.exit(1)` |
+| JSON-RPC read | Non-JSON lines silently skipped (kiro-cli debug output) |
+| Config load | Invalid JSON → log warning, return defaults |
+| Skill index (`list_skills`) | One global SKILL.md that is not UTF-8 or cannot be opened → one warning naming the file, that row dropped, every other row listed. Never a failed listing: the index feeds every chat turn and `GET /api/skills`. Rationale: [memory-skills-hooks](../modules/memory-skills-hooks.md) |
+| Process spawn | Backend-specific executable resolver, including trusted-path checks where required; clear error if missing |
+| asyncio loop callback | A Windows Proactor reset repeated by its `connection_lost` close callback is warning-only; task-level connection resets and other exceptions remain ERRORs with crash breadcrumbs |
+
+## Dashboard Error Codes
+
+Dashboard JSON errors include a stable lower-snake `code` alongside advisory
+`error` text, preserving the route's HTTP status. Redact untrusted text fields
+before putting them in a transparent response dictionary. A computed status is
+compliant when that dictionary carries an explicit code; an uncoded or opaque
+body remains debt in `test/test_error_code_contract.py`. That guard also checks
+literal code values on computed-status responses and refuses dictionary spreads
+that could replace the code.
+
+## Dashboard Error Hand-off
+
+`ErrorNotice`'s optional **Ask the agent** action resolves the structured report,
+stages its prompt in the error hand-off FIFO, then navigates to `/chat` through
+the imperative navigator installed by `App`. The installed navigator carries the
+same `useMayLeaveForNavigation` answer used by shell links. `sendErrorToChat`
+asks that answer before it writes the FIFO or notifies a mounted chat subscriber;
+a veto therefore leaves the current page, its draft, and the hand-off queue
+unchanged. With no registered page guard the answer remains `true`, preserving
+the existing hand-off. The root error boundary's explicit hard-navigation mode
+continues to bypass the live React tree and stages before reloading.
+
+The ask happens exactly once per click. A surface that already has a leave gate
+in scope (the notification sheet's crash fallback, through `AskAgentButton`'s
+`gate` built on `useGuardedLeave`) asks the page through that gate; the hand-off
+it then runs passes `leaveGranted` to `sendErrorToChat`, which skips the
+installed navigator's own ask. Both reads are the same
+`useMayLeaveForNavigation` channel, and a page guard that confirms a draft away
+keeps the draft dirty until the page unmounts, so a second ask was a second live
+confirm — one whose "keep my draft" cancelled a hand-off the first ask had
+already accepted. An ungated caller still asks through the navigator.
+
+## Backend Error Classification
+
+`acp/transport_errors.py` (re-exported by `acp/client.py`) rewrites raw JSON-RPC
+backend errors into actionable user text (`_format_acp_error`) and decides
+retry-eligibility (`_is_transient_raw_error`).
+Both key off the SAME module-level `_RE_*` patterns so wording and retry verdict
+never drift. Notable terminal (non-retryable) classes:
+
+- **Context window overflow**: the provider's exact "The context window
+  overflowed" rejection becomes an ordinary `AcpError` with `transient=False`,
+  `structural_terminal=True`, and `context_overflow=True`. `_raise_acp_error`
+  constructs it through the common `AcpError` path and applies all three facts
+  in the existing data-field-only structural tag block; an echo in the JSON-RPC
+  `message` cannot classify an unrelated failure. It is terminal on the same
+  native session: replaying the same startup envelope cannot make it smaller. A
+  surface may replace the session or runtime only when no model text or tool side
+  effect was observed; subagents use one shared-to-dedicated retry.
+- **Malformed request**: a structural rejection (backend "Improperly formed
+  request"). Classified TERMINAL: the identical payload cannot succeed on
+  retry, so the message states the request was malformed and points at a repair
+  affordance (`/compact` to shrink and repair the conversation, or starting a new
+  conversation) rather than suggesting a retry. The reset affordance is PROSE,
+  not a command: this formatter does not know which surface renders the string,
+  and the reset command differs per surface (`/new` on Telegram and Discord, a
+  new tab on the dashboard), so naming one spelling hands every other surface's
+  user a command that does nothing. A command may be named here only if
+  every surface UNDERSTANDS it: `/compact` qualifies because it reaches the
+  backend through the prompt transport everywhere, even on Slack, which also
+  offers `!compact` as its own alias. The same rule governs the sibling
+  prompt-busy branch, which for the same reason now names no command at all.
+- **Unsupported image history**: Kiro's `IMAGE_FORMAT_UNSUPPORTED` /
+  `ImageValidationError` is terminal and structural. The exception also carries
+  the narrower `image_format_unsupported` tag. A current attachment is left in
+  place with remove-or-re-encode guidance; a dashboard turn with no new
+  attachments may discard the native resume SID once and retry from Kiro Crew's
+  bounded text transcript, which excludes native binary image blocks.
+  "No new attachment" is read as TWO facts, because empty dashboard attachment
+  lists do not prove the turn shipped no image: a channel turn (and a dashboard
+  turn that types a path) carries its image as a bare path inside the message
+  text, which `build_prompt_blocks` inlines as a CURRENT-turn image block. So the
+  recovery additionally requires that the raw message match none of
+  `image_refs._PATH_RE` — the builder's own scanner on the builder's own
+  haystack — and otherwise falls through to the terminal guidance rather than
+  clearing a healthy conversation and re-inlining the same bytes.
+  The queued recovery turn is gated at DISPATCH, not only at enqueue: the
+  conversation discard and the pending-reset consume are awaited between the two,
+  and a soft Stop in that window preserves the queue while `_stopping` snaps back
+  to idle. The slot therefore records the recovery's queue id plus the slot- and
+  session-scoped stop generations at enqueue, and the queue drain drops the entry
+  (refunding the shared one-shot) when either counter moved, when user input
+  queued behind it, or when the slot was rebound to another session — the same
+  rule (`RecoveryReplays.revalidate`, `dashboard/recovery_replays.py`) the
+  model-access and refusal replays
+  carry, re-checked at the turn's consume seam. One requeue is exempt, decided
+  at the requeue: a verbatim requeue of a sub-agent completion the model never
+  consumed is a result the parent is still owed, so it is queued again as the
+  completion it is (`SUBAGENT_COMPLETION_KIND`), with no recovery record, and
+  runs ahead of a newer user message instead of being suppressed or cancelled
+  by a soft Stop. A hard kill discards it, and runner-written text queued for
+  the completion (a continuation, a retry prompt) is never exempt.
+- **Oversized request**: kiro-cli's own refusal, `This message is too large to
+  send, and it contains no text that can be shortened. Remove or reduce the
+  attached content and try again.` It is emitted when the context overflowed
+  and the pending message is irreducible (image blocks have no truncated form),
+  and kiro-cli neither compacts on the way to saying so nor appends the failed
+  message to the native history, so the conversation is byte-identical before
+  and after the failure and the identical payload is refused identically on
+  every retry. Classified TERMINAL and tagged `structural_terminal` like the
+  two rejections above — a size verdict rather than a shape verdict, but
+  equally deterministic, and the tag is what stops a self-prompting loop from
+  re-sending the same attachment every cycle. Matched against the provider
+  `data` field only, where kiro-cli's ACP server places an agent-loop error
+  (`message` is the `-32603` boilerplate). The terminal verdict is stated
+  explicitly in the classifier because the sentence ends in "try again", which
+  a retry-hint pattern must not read as a momentary blip. No curated copy: the
+  provider's sentence already names the remedy, so the unknown-shape path shows
+  it verbatim, and it does not carry `image_format_unsupported` — the
+  conversation-discard recovery above is for a rejected image, not for a
+  request that is merely too big.
+- **Usage limit** and **model not entitled**: allowance spent, or the plan lacks
+  the model; also terminal, with guidance to switch model or tier.
+
+The auth family has exactly ONE transient member, **credential propagation**.
+Bedrock refuses a freshly minted credential with "The security token included in
+the request is invalid" — usually wrapped in `UnrecognizedClientException` and
+carrying a 403 — until IAM has propagated it, and the identical credential is
+accepted seconds later, so the existing backoff ladder absorbs it.
+`is_credential_propagation_delay` is the single predicate, read ahead of
+`_RE_AUTH` and the session-expiry branch in BOTH the classifier and the
+formatter, ahead of `llm_helpers._is_transient_acp_error`'s
+`accessdenied`/`unrecognizedclient` exclusion short-circuit (a
+`_TRANSIENT_MARKERS` entry alone is unreachable, because the exclusion sits
+above the markers), and inside `is_auth_failure_output` so `acp/runtime.py`'s
+stderr latch does not convert it to the explicitly non-retryable
+`AcpAuthRequired` and skip the ladder entirely. It is scoped to the "is invalid"
+WORDING, never to the status: a bare 401/403, an `... is expired` token, a
+combined "invalid or expired", and an invalid *bearer* token all stay terminal.
+The predicate lives in `credential_errors.py`, not `acp/client.py`, so consumers
+on the application side of the agent-SDK boundary share one verdict without a
+fresh ACP-layer import edge.
+
+That wording is shared with a permanently invalid access key
+(`UnrecognizedClientException` or `InvalidClientTokenId` for a key that was
+deleted, rotated, or mistyped), so a never-valid credential is also classified
+transient. The retry budget bounds that misclassification — three retries, ~15 s
+— and the formatted message closes with the terminal "refresh your AWS
+credentials" guidance rather than asserting the propagation diagnosis as fact.
+
+Retry hints are the other wording-only signal, and they are **provider-scoped**:
+`_RE_5XX_HINT` carries one alternative per backend spelling ("please try again"
+for Kiro/Bedrock, "try your request again" for the claude-agent-acp seam's
+generic upstream 500, whose frame has no named exception and no HTTP status, so
+the hint is its only transient marker). Onboarding a backend means auditing that
+alternation. The kiro-cli mid-stream envelope ("Encountered an error in the
+response stream: …") is deliberately NOT a hint — matching it would make the
+branch a catch-all that discards the real cause.
+
+## Model-Side Refusals
+
+A refusal is a turn the model DECLINED, not a turn that failed: the request
+reached the model and the answer is "no". It is deterministic — the same prompt
+hits the same filter — so it is never retried, and the useful thing to show is
+the reason. Harnesses report that reason unevenly, so `acp/types.RefusalInfo`
+is the one shape every harness is folded onto (`category`,
+`explanation`, `recommended_model`), each field left EMPTY when the provider
+did not say — never guessed.
+
+- **Kiro (kiro-cli, KAS)** — the service's content filter emits a
+  `_kiro.dev/metadata` frame with `stopReason: CONTENT_FILTERED` and a `refusal`
+  object, streams the canned explanation ("The selected model cannot continue
+  this conversation…") as ordinary assistant text, then ends the turn with a
+  plain `end_turn` (or a bare `-32603`). `acp/_dispatch.parse_refusal` reads the
+  frame (members of `ACP_BACKENDS_STRUCTURED_REFUSAL` only) onto
+  `AcpPromptStats.refusal`; `AcpPromptStats.terminal_refusal` rewrites the
+  terminal's stop reason to `STOP_REASON_REFUSAL` and attaches the payload as
+  `AcpEvent.refusal`. The explanation is redacted at the parser.
+- **claude-agent-acp, codex-acp** — only Anthropic's bare `stopReason: "refusal"`
+  reaches the client; `terminal_refusal` passes it through with no payload, and
+  the dashboard's refusal branch (keyed on the stop reason) renders the bare card.
+- **Dashboard** — `chat_runner.refusal_card_text` renders one card from
+  `RefusalInfo`: the lead line, then one line per non-empty field. Because the
+  Kiro explanation streams as text, the card is emitted from BOTH the answered
+  and the text-less branch of the turn epilogue.
