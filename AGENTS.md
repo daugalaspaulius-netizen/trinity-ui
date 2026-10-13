@@ -1,118 +1,59 @@
 # AGENTS.md — EFM Trinity UI botas (GitHub → Contabo per Ziti)
 
-## PRISIJUNGIMAS PRIE CONTABO SERVERIO
+## KAIP VEIKIA PRISIJUNGIMAS
 
-Tu esi botas Trinity UI repozitorijoje. Prisijungi prie Contabo serverio per Ziti tuneli.
-Tau duotas PILNAS agento irankiu rinkinys (kaip Cursor): skaityti, rašyti, redaguoti,
-ieškoti, vykdyti komandas, git.
+OpenZiti = Tailscale. Tai overlay tinklas, tuneliuoja TCP. Tu neesi atskiras botas su
+„API irankiais" — tu gauni PILNA ROOT SHELL per SSH, lygiai kaip Tailscale.
 
 ## ZITI KONFIGURACIJA
 
 - Kontroleris: efm.efmleads.com:1280
 - Identitetas: identities/trinity-bot.json (jau repo)
+- SSH raktas: ssh-keys/trinity-bot_id_ed25519 (jau repo, root prieiga)
 
-## TUNELIS (naudok Ziti 2.0.6 CLI, NE node splice.cjs)
-
-node splice.cjs NEVEIKIA: Node SDK 0.29.1 vs kontroleris 2.0.6 duoda tuscia atsakyma.
-Naudok ziti CLI 2.0.6:
+## PRISIJUNGIMAS (SSH PER ZITI — PAGRINDINIS BUDAS)
 
 ```bash
-ziti edge login efm.efmleads.com:1280
-ziti-tunnel run -i identities/trinity-bot.json
-# Po tunnel: servisai pasiekiami per localhost
+# 1. npm install (splice.cjs priklausomybe)
+npm install @openziti/ziti-sdk-nodejs
+
+# 2. Dial SSH servisa i localhost:2222
+node splice.cjs dial identities/trinity-bot.json 2222 trinity-ssh
+
+# 3. SSH i serveri per Ziti (pilnas root shell)
+ssh -i ssh-keys/trinity-bot_id_ed25519 -p 2222 \
+  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+  root@127.0.0.1
 ```
 
-## SERVISAI
+Po siu zingsniu turi PILNA root shell. Gali: ls, cat, vim/nano, git, python, bash —
+viskas, ka moka normalus kompiuteris. Jokiu papildomu „tool'u" nereikia.
 
-### trinity-vault → Kiro Crew gateway (localhost:5476)
+## VIENA-KARTE SU-KOMANDA (praktiskai)
+
 ```bash
-curl http://localhost:5476/api/status
+node splice.cjs dial identities/trinity-bot.json 2222 trinity-ssh &
+sleep 3
+ssh -i ssh-keys/trinity-bot_id_ed25519 -p 2222 \
+  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+  root@127.0.0.1 'ls /opt/efm/vault/gamyba/efm-go/'
 ```
 
-### trinity-files → Vault Agent Tools (localhost:19003)
+## VAULT VIETA
 
-PILNAS IRANKIU RINKINYS — visas agento darbas per si API.
-
----
-
-## TOOLS — PILNAS SARASAS
-
-### SKAITYMAS
-```bash
-# Skaityti faila
-curl "http://localhost:19003/api/read?path=gamyba/efm-go/CURRENT.md"
-
-# List directory (recursive=1 for tree)
-curl "http://localhost:19003/api/list?path=gamyba/efm-go"
-curl "http://localhost:19003/api/list?path=gamyba&recursive=1"
-
-# Glob (failu paieska pagal sablona)
-curl "http://localhost:19003/api/glob?pattern=**/*.yaml&path=gamyba/efm-go"
-
-# Grep (turinio paieska regex)
-curl "http://localhost:19003/api/grep?pattern=PRIMARY%20OBJECTIVE&path=gamyba/efm-go"
-```
-
-### RASYMAS
-```bash
-# Irasyti/overwrite faila (POST body = turinys)
-echo "turinys" | curl -X POST "http://localhost:19003/api/write?path=gamyba/efm-go/Test.md" --data-binary @-
-
-# Edit (string replace — kaip Cursor Edit tool, su old_string/new_string)
-curl -X POST "http://localhost:19003/api/edit" -H "Content-Type: application/json" \
-  -d '{"path":"gamyba/efm-go/Test.md","old_string":"sena","new_string":"nauja"}'
-# repeat_all: true kai old_string kartojasi
-
-# Delete
-curl -X POST "http://localhost:19003/api/delete?path=gamyba/efm-go/Test.md"
-```
-
-### BASH (komandu vykdymas)
-```bash
-curl -X POST "http://localhost:19003/api/bash" -H "Content-Type: application/json" \
-  -d '{"command":"ls -la gamyba/efm-go","cwd":"","timeout":30}'
-```
-cwd — santykinis kelias nave /opt/efm/vault. Atsakymas: {ok, exit, stdout, stderr}.
-
-### GIT
-```bash
-# Status
-curl "http://localhost:19003/api/git/status"
-
-# Diff (path optional)
-curl "http://localhost:19003/api/git/diff"
-curl "http://localhost:19003/api/git/diff?path=komunikacija/foo.md"
-
-# Log
-curl "http://localhost:19003/api/git/log?n=10"
-
-# Commit (message per query arba body)
-curl -X POST "http://localhost:19003/api/git/commit?message=Mano%20commit"
-
-# Push / Pull
-curl -X POST "http://localhost:19003/api/git/push"
-curl -X POST "http://localhost:19003/api/git/pull"
-```
-
-### STATUS / ROOT
-```bash
-curl "http://localhost:19003/api/status"
-curl "http://localhost:19003/"
-```
-
----
+Vault (visa EFM Go dokumentacija ir kodas): /opt/efm/vault
+- gamyba/efm-go/CURRENT.md — ka daryti dabar
+- gamyba/efm-go/EFM_GO_STATE.yaml — busenos
+- gamyba/efm-go/00-TAISYKLES.md — taisykles
 
 ## DARBO TVARKA
 
-1. ziti-tunnel run -i identities/trinity-bot.json
-2. Skaityk CURRENT.md ir EFM_GO_STATE.yaml per /api/read
-3. Dirbk: /api/read, /api/grep, /api/list, /api/write, /api/edit, /api/bash
-4. Po darbo: /api/git/commit + /api/git/push
-5. Atsijunk
+1. splice.cjs dial → SSH
+2. Skaityk CURRENT.md, dirbk kaip normalus agentas (ls, cat, git, python)
+3. Po darbo: git add/commit/push /opt/efm/vault
+4. Atsijunk
 
-## VAULT STRUKTURA (root = /opt/efm/vault)
+## PASTABA
 
-- gamyba/efm-go/CURRENT.md — ka daryti dabar
-- gamyba/efm-go/EFM_GO_STATE.yaml — busenos
-- gamyba/efm-go/00-TAISYKLES.md — darbo taisykles
-- komunikacija/ — komunikacijos failai
+node splice.cjs veikia tik su ivykdyta npm install @openziti/ziti-sdk-nodejs
+(jau repo package.json). Jei dial duoda tuscia atsakyma — patikrink ar node_modules yra.
