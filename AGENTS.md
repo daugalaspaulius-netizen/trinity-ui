@@ -8,8 +8,8 @@ OpenZiti = Tailscale. Tai overlay tinklas, tuneliuoja TCP. Tu neesi atskiras bot
 ## ZITI KONFIGURACIJA
 
 - Kontroleris: efm.efmleads.com:1280
-- Identitetas: identities/trinity-bot.json (jau repo)
-- SSH raktas: ssh-keys/trinity-bot_id_ed25519 (jau repo, root prieiga)
+- Identitetas ir SSH raktas gyvena tik serveryje, kataloge /opt/efm/ziti-spine/. Ju cia nera ir ju commitinti negalima.
+- SSH: ziti CLI 2.0.6 tunelis i trinity-ssh, tada ssh -p 2222 root@127.0.0.1. Privatus raktas i repo nededamas.
 
 ## PRISIJUNGIMAS (SSH PER ZITI — PAGRINDINIS BUDAS)
 
@@ -17,11 +17,11 @@ OpenZiti = Tailscale. Tai overlay tinklas, tuneliuoja TCP. Tu neesi atskiras bot
 # 1. npm install (splice.cjs priklausomybe)
 npm install @openziti/ziti-sdk-nodejs
 
-# 2. Dial SSH servisa i localhost:2222
-node splice.cjs dial identities/trinity-bot.json 2222 trinity-ssh
+# 2. Ziti CLI 2.0.6 tunelis (node splice su SDK 0.29.1 pries si kontroleri neveikia)
+#    ziti tunnel proxy -i <serverio identitetas> trinity-ssh:2222
 
-# 3. SSH i serveri per Ziti (pilnas root shell)
-ssh -i ssh-keys/trinity-bot_id_ed25519 -p 2222 \
+# 3. SSH i serveri per Ziti. Raktas yra tik serveryje, ne siame repo.
+ssh -i <serverio-ssh-raktas> -p 2222 \
   -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
   root@127.0.0.1
 ```
@@ -32,9 +32,8 @@ viskas, ka moka normalus kompiuteris. Jokiu papildomu „tool'u" nereikia.
 ## VIENA-KARTE SU-KOMANDA (praktiskai)
 
 ```bash
-node splice.cjs dial identities/trinity-bot.json 2222 trinity-ssh &
-sleep 3
-ssh -i ssh-keys/trinity-bot_id_ed25519 -p 2222 \
+# Tunelis ir raktas imami is serverio, ne is sio repo.
+ssh -i <serverio-ssh-raktas> -p 2222 \
   -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
   root@127.0.0.1 'ls /opt/efm/vault/gamyba/efm-go/'
 ```

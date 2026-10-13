@@ -192,3 +192,7 @@ src/kiro_crew/apps/builtins/aws_control/crew/runtime/vendor/*.whl
 /.kiro/settings/.kirocrew-cli-settings.lock
 /.venv-test
 /website/electron/build-info.json
+
+# Server credentials. Never commit. The public repo must not hold a key that opens Contabo.
+/ssh-keys/
+/identities/*.json
