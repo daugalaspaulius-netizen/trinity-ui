@@ -1,0 +1,293 @@
+"""The four member projection units, keyed by ``types.PROJ_*``.
+
+Each unit's ``apply`` returns the SAME state object for an irrelevant event,
+so the registry treats it as a no-op and emits nothing.
+
+The roster view carries no ``name``: ``init`` has no name to work with and the
+log body never restates it. The service overlays ``name`` (from the header)
+and ``slug`` onto the roster view in :meth:`MemberEventLogService.snapshot`.
+"""
+
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from typing import Any
+
+from kiro_crew.eventlog import types
+from kiro_crew.eventlog.types import Event
+
+# Fields copied last-wins from a member/config event into the roster.
+_CONFIG_FIELDS = (
+    "kiro_agent",
+    "workspace",
+    "memory_store",
+    "model",
+    "source",
+    "starred",
+    "avatar",
+    "display_name",
+)
+
+_ACTIVITY_RING = 50
+
+# The furthest ahead of the fold's own wall clock a `member/message` timestamp
+# may push `last_active_ts`. The monotone rule (see `RosterProjection.apply`)
+# has no upper bound of its own: it latches the greatest `ts` it has ever seen
+# and, being an append-only fold, has nothing that can ever walk that value
+# back down. A `ts` from a jumped-forward clock -- a VM resume, an NTP step, a
+# hand-edited ISO string -- is therefore permanent, and pins its member above
+# every genuinely-active crewmate for the life of the store. A small tolerance
+# absorbs ordinary clock skew between the hosts that stamp and fold the event;
+# anything past it is clamped down to the ceiling so the member still reads as
+# active now (the event did happen) without ranking ahead of the present.
+_FUTURE_TS_SKEW = 300.0
+
+
+def scope_activity_view(view: dict, owner: str) -> dict:
+    """An activity view holding only *owner*'s records, with counts to match.
+
+    Slugification is lossy, so two distinct member NAMES can share one slug and
+    therefore one log. The fold cannot tell them apart: a projection's ``apply``
+    and ``view`` see events and nothing else, and the owning name lives in the
+    log HEADER, which is not an event. So the scoping belongs where the header
+    name is known -- the service, beside the ``name`` it already overlays onto
+    the roster view for exactly the same reason.
+
+    The counts are recomputed here rather than kept from ``view``: counts taken
+    over the unfiltered ring would describe a different set of records than the
+    list served next to them, which is a worse answer than either alone.
+    """
+    records = [r for r in view.get("recent", []) if isinstance(r, dict)]
+    kept = [r for r in records if r.get("member") == owner]
+    now = datetime.now(timezone.utc).timestamp()
+    day = 86400.0
+    today = 0
+    week = 0
+    for r in kept:
+        secs = _parse_ts(r.get("ts"))
+        if secs is None:
+            continue
+        age = now - secs
+        if age < day:
+            today += 1
+        if age < 7 * day:
+            week += 1
+    out = dict(view)
+    out["recent"] = kept
+    out["today"] = today
+    out["week"] = week
+    return out
+
+
+def _parse_ts(ts: Any) -> float | None:
+    """Best-effort epoch seconds from an ISO-8601 string or a number."""
+    if isinstance(ts, (int, float)):
+        return float(ts)
+    if isinstance(ts, str) and ts:
+        s = ts.strip()
+        # Accept a trailing Z as UTC.
+        if s.endswith("Z"):
+            s = s[:-1] + "+00:00"
+        try:
+            dt = datetime.fromisoformat(s)
+        except ValueError:
+            return None
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.timestamp()
+    return None
+
+
+# ---------------------------------------------------------------------------
+# roster
+# ---------------------------------------------------------------------------
+class RosterProjection:
+    key = types.PROJ_ROSTER
+    #: 2 because `last_active_ts` is MONOTONE (see `apply`), which is bookkeeping
+    #: a savepoint written by a fold WITHOUT that rule can contradict. Such a
+    #: savepoint can hold a recency a preview correction walked backwards, and
+    #: resuming it applies only the events after it -- so the regressed value
+    #: would stand for the life of the store, or until the member next spoke,
+    #: and the Recent order would still be wrong after the upgrade. A bump is
+    #: what discards it (`projection/checkpoint.py`: a `state_version` mismatch
+    #: refuses the payload), after which the member's own log is re-folded from
+    #: the start under the monotone rule. Cheap, and the only lossless answer:
+    #: the events the bad savepoint consumed are the ones that hold the truth.
+    state_version = 2
+
+    def init(self) -> dict:
+        return {}
+
+    def apply(self, state: dict, event: Event) -> dict:
+        etype = event["type"]
+        data = event.get("data") or {}
+        if etype == types.MEMBER_CONFIG:
+            new = dict(state)
+            for f in _CONFIG_FIELDS:
+                if f in data:
+                    new[f] = data[f]
+            return new if new != state else state
+        if etype == types.MEMBER_BINDING:
+            slot_key = data.get("slot_key")
+            if slot_key is not None and state.get("slot_key") != slot_key:
+                new = dict(state)
+                new["slot_key"] = slot_key
+                return new
+            return state
+        if etype == types.MEMBER_MESSAGE:
+            new = dict(state)
+            # MONOTONE, unlike every other field here. "When was this member last
+            # active" is an answer time only ever moves forward, so a fold that
+            # took each event's `ts` last-wins could only ever be wrong when it
+            # moved down -- and one writer moves it down by design.
+            # `reconcile_member_preview` corrects a stale quote by appending a
+            # `member/message` carrying the TRANSCRIPT's epoch, which is the last
+            # thing SAID and is therefore older than any machinery turn since. A
+            # last-wins fold let that correction reset recency to the last
+            # speech, on every roster read, in an append-only log with nothing to
+            # reopen it -- so a crewmate the user had just messaged sank back to
+            # where the quote was from. Taking the greater keeps both writers
+            # honest: the correction still lands its quote, and no writer has to
+            # know what the recency was before it.
+            #
+            # CEILING. Monotone-greatest has no upper bound of its own, so a `ts`
+            # from a jumped-forward clock would latch permanently and pin the
+            # member atop Recent for good (see `_FUTURE_TS_SKEW`). Clamp the
+            # candidate to the fold's own wall clock plus a skew tolerance before
+            # the monotone compare: a future `ts` still advances a staler recency
+            # to now (the activity is real) but can never rank ahead of it.
+            ts = _parse_ts(data.get("ts"))
+            if ts is not None and ts > 0:
+                now = datetime.now(timezone.utc).timestamp()
+                ceiling = now + _FUTURE_TS_SKEW
+                if ts > ceiling:
+                    ts = ceiling
+                held = _parse_ts(state.get("last_active_ts")) or 0.0
+                new["last_active_ts"] = ts if ts > held else state.get("last_active_ts")
+            # A machinery row (tool call, patrol turn) bumps recency but carries
+            # no preview; the last thing SAID stays on the row.
+            if "preview" in data:
+                new["last_message"] = data.get("preview")
+            return new if new != state else state
+        return state
+
+    def view(self, state: dict) -> dict:
+        return dict(state)
+
+
+# ---------------------------------------------------------------------------
+# activity
+# ---------------------------------------------------------------------------
+class ActivityProjection:
+    key = types.PROJ_ACTIVITY
+    state_version = 1
+
+    def init(self) -> dict:
+        return {"recent": []}  # newest-first ring of record data dicts
+
+    def apply(self, state: dict, event: Event) -> dict:
+        if event["type"] != types.ACTIVITY_RECORD:
+            return state
+        record = event.get("data") or {}
+        recent = [record] + state["recent"]
+        if len(recent) > _ACTIVITY_RING:
+            recent = recent[:_ACTIVITY_RING]
+        return {"recent": recent}
+
+    def view(self, state: dict) -> dict:
+        recent = state["recent"]
+        now = datetime.now(timezone.utc).timestamp()
+        day = 86400.0
+        today = 0
+        week = 0
+        served: list[dict] = []
+        for r in recent:
+            secs = _parse_ts(r.get("ts")) if isinstance(r, dict) else None
+            if secs is None:
+                # A record with no readable timestamp cannot be placed on a
+                # timeline, so it is skipped rather than served as garbage --
+                # the same rule the REST activity read applies.
+                continue
+            age = now - secs
+            if age < day:
+                today += 1
+            if age < 7 * day:
+                week += 1
+            # ``ts`` is served as EPOCH SECONDS, not as the ISO string the log
+            # stores. The counting loop above already parses it, and the REST
+            # activity read serves epoch seconds too, so a consumer reading one
+            # of the two paths must not have to branch on which one it got.
+            served.append({**r, "ts": secs})
+        return {"recent": served, "today": today, "week": week}
+
+
+# ---------------------------------------------------------------------------
+# wake
+# ---------------------------------------------------------------------------
+class WakeProjection:
+    key = types.PROJ_WAKE
+    state_version = 1
+
+    def init(self) -> dict:
+        return {"patrol": "none"}
+
+    def apply(self, state: dict, event: Event) -> dict:
+        etype = event["type"]
+        data = event.get("data") or {}
+        if etype == types.PATROL_STARTED:
+            return {
+                "patrol": "armed",
+                "slot_key": data.get("slot_key"),
+                "since": event["time"],
+            }
+        if etype == types.PATROL_STOPPED:
+            return {
+                "patrol": "stopped",
+                "slot_key": data.get("slot_key"),
+                "stopped_reason": data.get("reason"),
+                "since": event["time"],
+            }
+        return state
+
+    def view(self, state: dict) -> dict:
+        return dict(state)
+
+
+# ---------------------------------------------------------------------------
+# driving
+# ---------------------------------------------------------------------------
+class DrivingProjection:
+    key = types.PROJ_DRIVING
+    state_version = 1
+
+    def init(self) -> dict:
+        return {"open": frozenset()}
+
+    def apply(self, state: dict, event: Event) -> dict:
+        etype = event["type"]
+        data = event.get("data") or {}
+        slot_key = data.get("slot_key")
+        if slot_key is None:
+            return state
+        open_set: frozenset = state["open"]
+        if etype == types.SLOT_OPENED:
+            if slot_key in open_set:
+                return state
+            return {"open": open_set | {slot_key}}
+        if etype == types.SLOT_CLOSED:
+            if slot_key not in open_set:
+                return state
+            return {"open": open_set - {slot_key}}
+        return state
+
+    def view(self, state: dict) -> dict:
+        return {"open": sorted(state["open"])}
+
+
+def all_units() -> list:
+    return [
+        RosterProjection(),
+        ActivityProjection(),
+        WakeProjection(),
+        DrivingProjection(),
+    ]

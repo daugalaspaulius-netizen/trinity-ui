@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# ============================================================
+# EFM Go DONE GATE V2 — pre-push hook (FULL)
+#
+# Prieš push paleidžia FULL gate: fast + COMMIT_SHA + konsistencija +
+# full verifieriai + tests + build provenance + worktree clean.
+# ============================================================
+set -uo pipefail
+
+GATE="/opt/efm/vault/gamyba/efm-go/tools/efm_done_gate.py"
+
+echo ""
+echo "============================================================"
+echo " EFM Go DONE GATE V2 (pre-push / FULL)"
+echo "============================================================"
+
+if [ ! -f "$GATE" ]; then
+    echo "  FAIL: nerastas gate engine: $GATE"
+    exit 1
+fi
+
+python3 "$GATE" --full
+RC=$?
+
+if [ "$RC" != "0" ]; then
+    echo ""
+    echo "============================================================"
+    echo " PUSH BLOKUOTAS — DONE GATE FULL FAIL"
+    echo "============================================================"
+    exit 1
+fi
+
+echo ""
+echo " DONE GATE FULL PASS — push leidžiamas ✓"
+exit 0

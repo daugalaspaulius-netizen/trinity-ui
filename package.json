@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@openziti/ziti-sdk-nodejs": "^0.29.1"
+  }
+}
