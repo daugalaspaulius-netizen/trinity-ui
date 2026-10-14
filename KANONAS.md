@@ -33,6 +33,55 @@ Tikslas yra veikiantis botas ir programa. Kai tai stovi ir prižiūrima, galima 
 
 Inventorizacijos commit draudimas lieka. Šitas kelias jo nenuima.
 
+## Promptas. Kelias iki gaminio
+
+Šitas promptas yra šito kanono dalis. Jis stovi iškart po skyriaus „Kelias iki gaminio“ ir žemiau to sprendimo. Tas pats tekstas yra PROMPTAS-KELIAS.txt šalia šito failo. Jei promptas ir šitas failas išsiskiria, laimi šitas failas.
+
+SAVININKAS: CURSOR
+
+PROMPTAS SAU. KELIAS IKI GAMINIO.
+Data: 2026-10-14 vakaras
+Šitas tekstas yra vykdymas man pačiam. Jis yra žemiau KANONAS.md skyriaus „Kelias iki gaminio“. Jei kas nors čia prieštarauja tam skyriui, laimi kanonas. Inventorizacijos commit draudimas lieka. Šitas promptas jo nenuima.
+
+Founderis 2026-10-14 vakare pasakė: OpenCode nebežaidžia. Einame link savo gaminio. Iš KiroCrew imame tai, kas jau mūsų. Dešimtą etapą, gyvą EXE, darome tik kai šita eilė sujungta. Pirma botas ir programa, paskui marketingas.
+
+Stuburas
+
+EFM Go programa → OpenZiti → Contabo model-gateway → OpenRouter
+
+Raktas lieka serveryje, model-gateway, 127.0.0.1:8095. Į lauką jį iškelia OpenZiti tarnyba efm-model-gateway. Žmogaus kompiuteryje rinkimas yra vietinis portas 18195. Pokalbio tekstas lieka pas žmogų. Serverio usage_events laiko tokenus ir kainą, ne susirašinėjimą.
+
+Kas jau stovi
+
+- model-gateway kviečia OpenRouter ir rašo tokenus bei kainą.
+- OpenZiti rišiklis efm-model-gateway veikia.
+- local-runtime klientas rašo pokalbį į ~/.efm-go/sessions arba %LOCALAPPDATA%/EFMGo/sessions ir kreipiasi į http://127.0.0.1:18195.
+- Aktyvi užduotis yra EFM-GO-KELIAS-IKI-GAMINIO.
+
+Ko nedaryti
+
+- OpenCode nebekviesti ir nestatyti kaip smegenų. Senas įrašas acp_backend=opencode faile /root/.kiro/crew/config.json yra mūsų bandymas, ne kelias.
+- Gyvo EXE nestatyti ir website/electron/dist neliesti, kol punktai 1–5 nesujungti.
+- Produkto nekomituoti, kol kanone galioja INVENTORIZACIJA-COMMIT=DRAUDZIAMA.
+- Vault šakos cursor/n8n-3658-dns-9530 nepushinti. Force push nedaryti.
+- Raktų į EXE ir į kliento bylą nedėti.
+- Svetimo Kiro serverio, kiro-cli ir Kiro kreditų negrąžinti.
+
+Eilė
+
+1. Pokalbio byla pas žmogų. Pradėta local-runtime. Toliau ta pati byla turi gimti Electron lange, ne /root/.kiro serveryje.
+2. Langas per OpenZiti. Electron turi šaukti šitą klientą, ne seną vietinį gateway.
+3. Botas tuo pačiu keliu. Telegramo žinutė eina į model-gateway. Serveris pokalbio bylos nerašo.
+4. Viena būsena: Ziti, gateway, OpenRouter. Žmogus kviečiamas tik kai automatas nebeatsigauna.
+5. Įrenginys: gateway priima pokalbį tik iš įrašyto kompiuterio.
+6. Tada gyvas EXE su efm_go viduje, ne su senu kirocrew-backend.
+
+Iš KiroCrew pasilikti
+
+Electron langą, sesijų kūną, Telegramo botą, cron ir įrankius, vieną tarnybą, atsikėlimą po kritimo, locką, lubas, raktų redakciją. Sargyba negali užsidaryti vien dėl aplanko vardo.
+
+Baigta nėra accepted. Kalba founderiu lietuvių. Po kiekvieno punkto įrašyti į /opt/efm/vault/gamyba/efm-go/logai/KELIAS-IKI-GAMINIO.log ir eiti toliau. Nekomituoti produkto.
+
 ## Sprendimas. Visa inventorizacija keičiama
 
 Šitas sprendimas yra žemiau kelio iki gaminio ir aukščiau už likusius šito failo punktus. Jo negalima ignoruoti, sušvelninti ar pakeisti etapų planu.
@@ -50,7 +99,7 @@ Etapų eilė, ką keisti kartu ir ką atskirai, yra ETAPAI-INVENTORIZACIJA.txt �
 ## Vykdymo eilė yra šito kanono dalis
 
 Founderis 2026-10-14 liepė šitą eilę saugoti ir pradėti vykdyti.
-Pilnas tekstas yra PROMPTAS-EILISKUMAS.txt šalia šito failo. Tas failas yra šito kanono dalis. Jis žemiau sprendimo SPRENDIMAS-INVENTORIZACIJA-20261014 ir aukščiau už kitus darbo planus.
+Kelio promptas yra skyriuje „Promptas. Kelias iki gaminio“ ir faile PROMPTAS-KELIAS.txt. Jis aukščiau už inventorizacijos eilę. Inventorizacijos pilnas tekstas yra PROMPTAS-EILISKUMAS.txt šalia šito failo. Tas failas irgi yra šito kanono dalis. Jis žemiau kelio prompto ir žemiau sprendimo SPRENDIMAS-INVENTORIZACIJA-20261014.
 Laukimas baigtas. Vykdymas eina ta eile. Commit draudimas lieka.
  Tas failas yra žemiau šito sprendimo. Jei etapų eilė prieštarauja sprendimui, laimi sprendimas: vis tiek keičiama viskas, kas inventorizacijoje.
 
