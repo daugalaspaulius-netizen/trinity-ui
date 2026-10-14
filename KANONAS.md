@@ -2,12 +2,40 @@
 
 Žyma: KANONAS-AUSCIAUSIAS
 Data: 2026-10-14
+Papildyta: 2026-10-14 vakaras, kelias iki gaminio
 Savininkas: FOUNDER Paulius Daugelis
 Užrašė: CURSOR, 2026-10-14, pagal founderio žodžius. Tai nėra Cursor sugalvotas promptas.
 
+## Sprendimas. Kelias iki gaminio
+
+Šitas įrašas yra aukščiau už visus kitus šito failo punktus, taip pat už inventorizacijos etapų eilę. Jį 2026-10-14 vakare pasakė founderis Paulius Daugelis. Užrašė CURSOR pagal jo žodžius.
+
+OpenCode nebežaidžia. Tai buvo mūsų bandomasis įrašas senoje KiroCrew nuostatoje `/root/.kiro/crew/config.json`, ne stuburas ir ne perdaromas kodas.
+
+Stuburas, kuris jau stovi ir lieka:
+
+EFM Go programa → OpenZiti → Contabo model-gateway → OpenRouter
+
+Raktas lieka serveryje, `model-gateway`. Pokalbio tekstas lieka pas žmogų, toje programoje, kurią jis atidaro. Serveris laiko tokenų skaičių ir kainą.
+
+Iš KiroCrew imame tai, kas jau mūsų ir veikia: Electron langą, sesijų ir įrankių kūną, Telegramo botą, priežiūrą. Smegenys yra mūsų model-gateway. Svetimos programos smegenims nebestatome.
+
+Eilė iki gaminio. Dešimtas etapas, gyvas EXE, daromas tik kai šitos dalys sujungtos:
+
+1. Pokalbio byla pas žmogų.
+2. Langas per OpenZiti į jau veikiantį model-gateway.
+3. Botas tuo pačiu keliu, be pokalbio bylos serveryje.
+4. Viena būsena: Ziti, gateway, OpenRouter. Žmogus kviečiamas tik kai automatas nebeatsigauna.
+5. Įrenginys: gateway priima pokalbį tik iš įrašyto kompiuterio.
+6. Tada gyvas EXE. Kol 1–5 nesujungti, EXE nestatome.
+
+Tikslas yra veikiantis botas ir programa. Kai tai stovi ir prižiūrima, galima eiti prie marketingo ir traukti žmones. Pirma gaminys.
+
+Inventorizacijos commit draudimas lieka. Šitas kelias jo nenuima.
+
 ## Sprendimas. Visa inventorizacija keičiama
 
-Šitas sprendimas yra aukščiau už kitus šito failo punktus. Jo negalima ignoruoti, sušvelninti ar pakeisti etapų planu.
+Šitas sprendimas yra žemiau kelio iki gaminio ir aukščiau už likusius šito failo punktus. Jo negalima ignoruoti, sušvelninti ar pakeisti etapų planu.
 
 Founderis 2026-10-14 nusprendė: iš inventorizacijos, kurią padarėme, keičiama viskas. Visas sąrašas. Kiekvienas ten surašytas punktas keičiamas arba ištrinamas. Nieko iš to sąrašo negalima palikti, apeiti ar pavadinti nebūtinu.
 
