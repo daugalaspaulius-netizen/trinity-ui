@@ -1,0 +1,172 @@
+ETAPAI-INVENTORIZACIJA
+Data: 2026-10-14
+Savininkas: FOUNDER Paulius Daugelis
+Užrašė: CURSOR, pagal founderio sprendimą KANONAS.md
+
+Šitas failas yra žemiau KANONAS.md sprendimo SPRENDIMAS-INVENTORIZACIJA-20261014.
+Sprendimas: keičiama viskas, kas surašyta faile „Kiro Krev. Kodas, kuri reikia pakeisti arba ištrinti.txt“.
+INVENTORIZACIJA-COMMIT=DRAUDZIAMA. Etapas nėra commit. Produkto commit draudžiamas, kol visas sąrašas padarytas.
+
+Kartu reiškia: tai viena duris. Ištrynus vieną dalį, kita dalis tą pačią durį palieka atvirą, arba tai tas pats failas.
+Atskirai reiškia: failas pats durų neatidaro ir jo pakeitimas nelaužo kito failo. Vis tiek kiekvienas toks failas privalomas. Atskirai nereiškia nebūtina.
+
+Gyvas dist, Windows diegiklis ir gateway paketas ranka neredaguojami. Jie pasikeičia tik iš išvalyto šaltinio, kai founderis lieps statyti. Gateway neperkraunamas. EXE šituose etapuose nestatomas.
+
+
+ETAPAS 1. Kartu. Svetimas agento binaras
+
+Viena duris: programa gali svetimą CLI atsisiųsti, rasti jau įdiegtą ir jį paleisti, o ekranas žmogui liepia jį diegtis.
+
+Keisti vienu praėjimu:
+- packaging/build-desktop.sh visas failas, ir atsisiuntimo skyrius, ir programos tapatybės eilutės tame pačiame faile
+- packaging/kiro-cli-version
+- packaging/kiro-cli-sha256
+- .github/workflows/build-desktop.yml
+- .github/workflows/build-windows.yml tik CLI versijos perdavimas. Pasirašymo bucket eilutės lieka etapui 3, jei jų nepaliečiame čia
+- docker/Dockerfile atsisiuntimas ir kilmės etiketė
+- .github/workflows/publish-docker.yml
+- src/kiro_crew/cloud/templates/kirocrew-ec2.yaml atsisiuntimas
+- src/kiro_crew/cloud/ec2.py leidžiamas hostas
+- src/kiro_crew/cloud/iam.py tas pats hostas
+- src/kiro_crew/kiro_cli.py paieška ir paleidimas
+- src/kiro_crew/kiro_prerequisite.py
+- website/electron/gateway-env.js
+- src/kiro_crew/acp/client.py ir src/kiro_crew/acp/harness/kas.py ten, kur paleidžiamas tas binaras
+- src/kiro_crew/apps/builtins/aws_control/crew/runtime/Dockerfile visas nepasiekiamas diegimo blokas
+- website/src/components/KiroPrerequisiteGate.tsx
+
+Neliečiama ranka: assets/main-70Cvx-Mz.js. Jis yra šito ekrano jau pastatyta kopija ir pasikeis tik vėlesniame bilde.
+
+
+ETAPAS 2. Kartu. Paskyra, valdymo plokštė ir kreditas
+
+Viena duris: senas prisijungimas ir senas kredito skaitymas. Ištrynus tik likutį, prisijungimas lieka. Ištrynus tik portalą, limito kreipinys lieka.
+
+Keisti vienu praėjimu:
+- src/kiro_crew/dashboard/handlers/kiro_usage_api.py
+- src/kiro_crew/auth/login/endpoints.py
+- src/kiro_crew/auth/login/control_plane.py
+- website/src/components/KiroAccountModal.tsx
+- gyvo dist nuoroda app.kiro.dev/settings/account ateina iš šito ekrano. Rankomis dist neredaguojamas
+
+Paruoštame kode portalas jau tuščias ir valdymo plokštė jau kelia klaidą be env vėliavos. Etapas vis tiek privalomas: POST kodas, AWS oidc adresai, codewhisperer leidimai ir limito kreipinys tebestovi. Windows bildas ir gyvas gateway paketas šito atjungimo neturi. Jie pasikeičia etape 10, ne dabar.
+
+
+ETAPAS 3. Kartu. Programos tapatybė ir atnaujinimų kanalas
+
+Viena duris: tuo pačiu identifikatoriumi programa registruojasi, pasirašoma ir ieško atnaujinimo. build-desktop.sh tapatybės eilutės jau keičiamos etape 1, nes tai tas pats failas. Čia likę:
+
+- website/electron/main.js
+- packaging/signing/generate-manifest.py
+- packaging/signing/manifest-template.json
+- packaging/signing/sign-dmg.sh
+- .github/workflows/sign-and-notarize.yml
+- .github/workflows/build-windows.yml pasirašymo rolės ir bucket vardai
+- src/kiro_crew/computer_use/policy.py
+- website/electron/auto-update.js komentarai. Nutildymas ir tuščia baitų bazė lieka, kol savas kanalas tikras
+
+Atskirai šitų failų neardyti. Vienas identifikatorius viename faile ir senas kitame palieka dvi tapatybes.
+
+
+ETAPAS 4. Galima po vieną failą. Platinimo tekstas
+
+Kiekvienas skriptas durų neatidaro, jei etapas 1 jau uždarė atsisiuntimą. Vis tiek privaloma. Galima vieną vakarą visus, galima po vieną:
+
+- cli.sh pagalbos citata
+- install.sh
+- minimal_install.sh
+- setup.sh
+- packaging/efm-go-p01-verify.sh
+- src/kiro_crew/apps/official_catalog.py likę sakiniai. Bazė paruoštame kode jau efmleads.com. Gyvas paketas tebėra senas ir keičiasi etape 10
+
+
+ETAPAS 5. Galima po vieną failą. Nuorodos į seną repozitoriją
+
+Kiekviena nuoroda savarankiška. Žmogui ji veda į svetimą kilmę. Programos paleidimo nelaužo. Galima po vieną:
+
+- src/kiro_crew/builtin_skills/feature-request/SKILL.md
+- src/kiro_crew/builtin_skills/debug-gateway/SKILL.md
+- src/kiro_crew/builtin_skills/theme-pack-authoring/SKILL.md
+- src/kiro_crew/builtin_skills/kirocrew-dev/babysit/SKILL.md
+- src/kiro_crew/config/prompt.md
+- website/src/utils/docsLink.ts
+- website/src/prompts/featureRequest.ts
+- website/src/pages/DeveloperPage.tsx
+- ec2 šablono git klono numatytasis adresas, jei etapas 1 jo nepalietė
+
+Jau pastatyti dist failai CapabilitiesPage, DeveloperPage, DiscoverPage, SettingsPage, MarkdownRenderer, startupVideoGate keičiasi tik etape 10.
+
+
+ETAPAS 6. Tik po vieną failą ir tik perskaičius
+
+Šitie failai inventorizacijoje surašyti kaip dar nešvarūs. Dalis yra komentaras, dalis yra sesijos kelias. Aklo pakeitimo nėra. Vienas failas, perskaitymas, tada keitimas arba trynimas. Kito failo nelaužo, bet aklas visų keitimas gali nutraukti sesiją:
+
+- src/kiro_crew/acp/_dispatch.py
+- src/kiro_crew/acp/harness/_common.py
+- src/kiro_crew/acp/harness/codex.py
+- src/kiro_crew/acp/runtime.py
+- src/kiro_crew/acp/session_handle.py
+- src/kiro_crew/acp/session_provider.py
+- src/kiro_crew/acp/skill_projection.py
+- src/kiro_crew/acp/types.py
+- src/kiro_crew/agent_sdk/backend_cards.py
+- src/kiro_crew/agent_sdk/backends.py
+- src/kiro_crew/agent_sdk/capabilities.py
+- src/kiro_crew/context.py
+- src/kiro_crew/dashboard/chat_runner.py
+- src/kiro_crew/dashboard/chat_turn/mcp_session.py
+- src/kiro_crew/dashboard/handlers/steering.py
+- src/kiro_crew/hooks.py
+- src/kiro_crew/providers/acp.py
+- src/kiro_crew/session.py
+- website/src/components/ModelDropdownList.tsx
+- website/src/pages/chat/SubagentProgressBar.tsx
+- website/src/shell/nav/railChrome.tsx
+- website/electron/scripts/local-feed-server.js
+- website/electron/scripts/stage3-autoupdate-test.sh
+
+acp/client.py ir harness/kas.py, jei jų paleidimas jau pakeistas etape 1, čia tikrinami likę sakiniai, ne antras paleidimo perrašymas.
+
+
+ETAPAS 7. Po durų, katalogais. Testai, dokumentai, tikrinimo įrankiai
+
+Ne pirmi. Jie reikalauja seno adreso, bet patys jo neatidaro. Keisti po to, kai 1–3 durys uždarytos, kitaip testas vėl pririš seną adresą:
+
+- testai, kuriuose yra crew.kiro.dev, kiro.dev, kirodotdev
+- docs/
+- .github šablonai ir likę workflow sakiniai
+- tools/vendor_verifier.sh
+- tools/brand_verifier.py
+- tools/backend-brand-clean.py
+- tools/backend-brand-inventory.py
+
+Įrankiai keičiami paskutiniai šitame etape, kad tikrintų jau pakeistą kodą.
+
+
+ETAPAS 8. Kartu, vienas etapas, ne po failą. Paketo ir katalogo vardas
+
+Paskutinis kodo etapas. Ne pirmas. Pusė pervadinta reiškia, kad programa neatsidaro.
+
+- katalogas /opt/efm/kirocrew-ui
+- Python paketas kiro_crew
+- paleidimas kirocrew
+- duomenų namai .kiro
+- Windows backend katalogas kirocrew-backend
+
+Kur seno kelio ištrynimas neatvertų senos sesijos ar nustatymų, dedamas tiltas. Tilte seno vardo naujam keliui nelieka. LICENSE ir NOTICE lieka kaip kilmės žyma.
+
+
+ETAPAS 9. Atskirai ir vėlai. Atsarginių kopijų sąrašas
+
+src/kiro_crew/efm_backup.py sąrašas, kuris atkuriant išmeta senus adresus, lieka tol, kol senos kopijos dar atkuriamos. Anksti jį ištrinti reikštų seną adresą vėl įsileisti iš kopijos. Testo dirbtinis config keičiamas kartu su šituo sąrašu, kai kopijos jau nebereikalauja seno vardo.
+
+
+ETAPAS 10. Ne redagavimas. Bildas ir gyvi sluoksniai
+
+Tik kai 1–9 šaltinyje padaryta ir founderis liepia statyti. Iki tol:
+
+- gateway PID neliečiamas
+- EXE neliečiamas ir nestatomas iš naujo
+- website/dist ir įdiegtas paketas neredaguojami vietoje
+
+Tada, atskiru founderio įsakymu, naujas bildas pakeičia gyvą svetainę, įdiegtą paketą ir Windows diegiklį. Tik po to šitas etapas gali būti vadinamas padarytu. Ir tik tada founderis gali kanone atšaukti INVENTORIZACIJA-COMMIT=DRAUDZIAMA. Iki to commit draudžiamas.

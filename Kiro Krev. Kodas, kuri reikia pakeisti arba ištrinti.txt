@@ -1,0 +1,298 @@
+Kiro Krev. Kodas, kuri reikia pakeisti arba ištrinti.
+Data: 2026-10-14
+Kas rašė: Cursor, pagal tą pačią dieną atliktą auditą serveryje.
+Savininkas: founderis Paulius Daugelis.
+Šitas dokumentas yra šalinimo sąrašas. Vardai jame yra taikiniai. Jie čia surašyti tam, kad būtų pakeisti arba ištrinti. Jie nėra paliekami produkto vardai.
+
+Matavimas
+- Kanoninis medis: /opt/efm/kirocrew-ui
+- Šaka: efm-go-brand
+- Commit: b0ba18674eaa9a2f5cf9e0bf3a6c6161170484e9
+- Commit laikas: 2026-10-13 15:57:59 +0200
+- Commit žinutė: fix(efm-go): paint chrome mint and drop Kiro paste wording
+- Peržiūrėta šaltinio failų: 18208. Praleista: .git, node_modules, dist, backend-dist, __pycache__.
+- Gyvas svetainės dist: /opt/efm/kirocrew-ui/website/dist/assets/main-70Cvx-Mz.js
+- To failo laikas: 2026-10-13 16:18:48 +0200
+- Tas pats failas patiekiamas iš įdiegto paketo static/dist. Abu failai sutampa.
+- Naujausias Windows diegiklis diske: website/electron/dist/EFM_Go_Setup_0.9.0_DEV.exe
+- Diegiklio laikas: 2026-10-12 19:03
+- Išpakuotas medis: website/electron/dist/win-unpacked
+- Jo viduje app.asar ir backend-dist/kirocrew-backend. kiro-cli binaro ten nėra.
+- Gyvas gateway: PID 1375919, neperkrautas, nevykdo git medžio. Vykdo /root/.kiro/crew-venv įdiegtą paketą.
+- Serveryje kiro-cli binaro nėra.
+
+Trys sluoksniai nesutampa. Žemiau kiekvienas punktas pasako, kuriame sluoksnyje ta logika dar gyva.
+
+
+1. Vardai, apie kuriuos klausta
+
+1.1. Produkto kodas /opt/efm/kirocrew-ui
+Katalogo vardas tebėra senas. Tai kanoninis medis, šaka efm-go-brand. Šitas katalogas yra kodas, iš kurio būtų statomas kitas bildas. Gyvas gateway jo nevykdo.
+
+1.2. crew.kiro.dev
+Seno platinimo vardai:
+- updates.crew.kiro.dev — atnaujinimų rodyklė
+- download.crew.kiro.dev — diegiklio baitai
+- apps.crew.kiro.dev — programų katalogas
+Šaltinyje šitas vardas rastas 54 failuose, 170 kartų. Dalis yra testai, dokumentai ir pagalbos tekstas. Gyvos vietos išskirtos 2 skyriuje.
+
+1.3. kirodotdev
+Senos GitHub organizacijos vardas: github.com/kirodotdev/KiroCrew. Tai kilmės nuoroda, ne apmokestinimo serveris. Šaltinyje rastas 363 failuose, 1153 kartus. Dauguma yra dokumentai, testai ir CI. Gyvos vietos išskirtos 2 skyriuje.
+
+1.4. KIRO_CLI_VERSION ir packaging/kiro-cli-version
+Failas packaging/kiro-cli-version turi vieną eilutę: 2.27.1.
+Eilutė KIRO_CLI_VERSION="$(tr -d '[:space:]' < packaging/kiro-cli-version)" tą skaičių nuskaito.
+Šalia yra packaging/kiro-cli-sha256 su keturių svetimų artefaktų kontrolinėmis sumomis: macOS DMG, du Linux zip, Windows MSI.
+CI failai .github/workflows/build-desktop.yml ir .github/workflows/build-windows.yml tą eilutę paleidžia ir į logą rašo, kad CLI bus įdėtas. Vėliavos BUNDLE_KIRO_CLI=1 jie neįjungia.
+
+1.5. packaging/build-desktop.sh
+Skyrius „Bundle kiro-cli“, apie 993–1367 eilutės.
+Jei BUNDLE_KIRO_CLI=1, skriptas siunčiasi svetimą CLI ir įdeda į programą:
+- macOS ir Linux iš https://desktop-release.q.us-east-1.amazonaws.com
+- Windows iš https://prod.download.cli.kiro.dev/stable
+- reikšmė latest ima kintantį manifestą
+- prisegta versija ima 2.27.1 ir tikrina sha256
+- funkcija kiro_cli_layout_gate atmeta vidinius .app ir .framework paketus
+- po to bando --version, login --help ir ACP initialize
+Numatyta reikšmė yra BUNDLE_KIRO_CLI=0, tada atsisiuntimas nevyksta.
+Atskiras failas vardu canonical kiro gate neegzistuoja. Artimiausi vartai yra šita funkcija kiro_cli_layout_gate ir ekrano komponentas KiroPrerequisiteGate.
+
+
+2. Kodas, kuri reikia pakeisti arba ištrinti
+
+Kiekviena eilutė yra darbas. Būsena pasako, kur tai dar gyva 2026-10-14.
+
+2.1. Naudojimo limitai ir svetimas kreditas
+Failas: src/kiro_crew/dashboard/handlers/kiro_usage_api.py
+Ką daro: POST į https://codewhisperer.us-east-1.amazonaws.com ir https://q.eu-central-1.amazonaws.com. Skaito Kiro arba Q tokeną ir grąžina kredito likutį. Atjungimo nėra.
+Būsena: gyva paruoštame kode, gyva Windows bilde, gyva įdiegtame pakete, kurį vykdo gateway.
+Veiksmas: pakeisti. Likutis turi eiti iš tiekėjo, kurį mokame mes, iš anksto. Šitas kreipinys ištrinamas.
+
+2.2. Desktop bildo svetimo CLI atsisiuntimas
+Failai:
+- packaging/build-desktop.sh
+- packaging/kiro-cli-version
+- packaging/kiro-cli-sha256
+- .github/workflows/build-desktop.yml
+- .github/workflows/build-windows.yml
+Ką daro: moka atsisiųsti svetimą 2.27.1 CLI iš AWS ir iš prod.download.cli.kiro.dev, patikrinti sumą ir įdėti į programą.
+Būsena: kodas paruoštas. Įjungiamas su BUNDLE_KIRO_CLI=1. Naujausiame Windows diegiklyje to binaro nėra, nes vėliava buvo išjungta.
+Veiksmas: ištrinti atsisiuntimą, pin failus ir CI eilutes. Programos runtime turi būti savas.
+
+2.3. Docker image svetimo CLI atsisiuntimas
+Failas: docker/Dockerfile
+Ką daro: kiekvienas image build siunčia manifestą ir zip iš https://desktop-release.q.us-east-1.amazonaws.com ir paleidžia install.sh. Versija įrašoma į /usr/local/share/kirocrew/kiro-cli-version.
+Papildomai 56 eilutė: SOURCE_REPO_URL numatyta https://github.com/kirodotdev/KiroCrew.
+Susiję: .github/workflows/publish-docker.yml perduoda KIRO_CLI_VERSION.
+Būsena: gyva paruoštame kode. Kiekvienas Docker build tai įvykdo.
+Veiksmas: ištrinti atsisiuntimą ir pakeisti kilmės etiketę.
+
+2.4. EC2 šablonas, kuris pats atsisiunčia CLI
+Failai:
+- src/kiro_crew/cloud/templates/kirocrew-ec2.yaml apie 579 eilutę
+- src/kiro_crew/cloud/ec2.py apie 229 eilutę, leidžiamų hostų sąraše yra desktop-release.q.us-east-1.amazonaws.com
+- src/kiro_crew/cloud/iam.py turi tą patį hostą
+Ką daro: nauja mašina siunčia kirocli zip iš latest, be prisegtos versijos.
+Būsena: gyva paruoštame kode ir Windows backend kopijoje.
+Veiksmas: ištrinti atsisiuntimą ir hostą iš leidžiamų.
+
+2.5. CLI paieška ir paleidimas
+Failai:
+- src/kiro_crew/kiro_cli.py funkcijos bundled_kiro_cli_entry, known_kiro_cli_dirs, resolve_kiro_cli, pin_kiro_cli
+- src/kiro_crew/kiro_prerequisite.py
+- website/electron/gateway-env.js kintamieji KIROCREW_BUNDLED_KIRO_DIR, KIROCREW_KIRO_BIN, KIRO_NO_AUTO_UPDATE
+- src/kiro_crew/acp/client.py
+- src/kiro_crew/acp/harness/kas.py
+Ką daro: programa pati nesisiunčia binaro, bet ieško sistemoje kiro-cli arba kiro-cli-chat ir paleidžia ACP sesiją. Aplinkos kelias turi pirmumą prieš sisteminį.
+Būsena: gyva paruoštame kode. Serveryje binaro dabar nėra, todėl gyvas gateway jo neranda. Kitame kompiuteryje, kur binaras įdiegtas, paleidimas įvyktų.
+Veiksmas: pakeisti. Sesija turi eiti sava tvarka. Svetimo binaro paieška ištrinama. Kur be jo programa neatsidaro, dedamas savas tiltas, ir tilte seno vardo nelieka.
+
+2.6. Svetimas prisijungimas
+Failas: src/kiro_crew/auth/login/endpoints.py
+Paruoštame kode portalas ir socialinis servisas jau tušti. Kreipinys kelia klaidą, nebent aplinkoje EFM_ALLOW_KIRO_AUTH=1. Seni adresai tekste dar yra: app.kiro.dev ir prod.us-east-1.auth.desktop.kiro.dev.
+Kas tebėra gyva ir paruoštame kode:
+- https://oidc.<region>.amazonaws.com
+- https://view.awsapps.com/start
+- https://amzn.awsapps.com/start
+- leidimai codewhisperer:completions, codewhisperer:analysis, codewhisperer:conversations
+- User-Agent tebėra Kiro-CLI
+Būsena Windows bilde ir gyvame gateway pakete kita. Ten atjungimo nėra:
+- _DEFAULT_PORTAL = https://app.kiro.dev
+- _DEFAULT_SOCIAL_SERVICE = https://prod.us-east-1.auth.desktop.kiro.dev
+Veiksmas: ištrinti AWS ir Kiro prisijungimą. Gyvame pakete ir Windows bilde jis dar veikia, nes tie sluoksniai senesni už paruoštą kodą.
+
+2.7. Valdymo plokštė
+Failas: src/kiro_crew/auth/login/control_plane.py
+Adresai:
+- https://management.us-east-1.kiro.dev/
+- https://management.eu-central-1.kiro.dev/
+Kvietimas: POST, taikinys AmazonCodeWhispererService.ListAvailableProfiles.
+Paruoštame kode kreipinys kelia klaidą, nebent EFM_ALLOW_KIRO_CONTROL_PLANE=1. POST kodas po tos klaidos tebestovi.
+Windows bilde ir gyvame pakete tos apsaugos nėra. Kvietimas ten tiesus.
+Veiksmas: ištrinti failo kreipinį ir adresus.
+
+2.8. Ekranas, kuris liepia diegtis iš svetimo adreso
+Failas: website/src/components/KiroPrerequisiteGate.tsx
+Eilutės rodo:
+- curl -fsSL https://cli.kiro.dev/install | bash
+- irm https://cli.kiro.dev/install.ps1 | iex
+Tas pats tekstas yra gyvame dist faile assets/main-70Cvx-Mz.js.
+Windows app.asar, 2026-10-12, šitų dviejų adresų neturi.
+Papildomai gyvame dist assets/App-mtMIWISO.js yra https://app.kiro.dev/settings/account.
+Veiksmas: ištrinti vartus ir abi komandas. Ekranas neturi siųsti žmogaus į svetimą diegimą ar svetimą paskyrą.
+
+2.9. Programos tapatybė, nuo kurios priklauso atnaujinimas
+Failai:
+- website/electron/main.js nustato com.amazon.kiro.crew ir com.amazon.kiro.crew.nightly
+- packaging/build-desktop.sh kartoja tą patį appId, nsis.guid ir naktinio kanalo vardus
+- packaging/signing/generate-manifest.py
+- packaging/signing/manifest-template.json
+- packaging/signing/sign-dmg.sh
+- .github/workflows/sign-and-notarize.yml
+- src/kiro_crew/computer_use/policy.py
+Būsena: gyva paruoštame kode ir Windows app.asar.
+Veiksmas: pakeisti į savą tapatybę. Senos tapatybės palikimas reiškia, kad atnaujinimų kanalas ir Windows registracija tebėra svetimi.
+
+2.10. Windows pasirašymo kanalas
+Failas: .github/workflows/build-windows.yml
+Jame tebėra senos rolės ir bucket vardai: kirocrew-windows-unsigned, kirocrew-windows-signed, KiroCrewWindowsExe, AWS paskyros 116101834266 rolė.
+Veiksmas: pakeisti į savą pasirašymą arba išjungti, kol savo nėra. Svetimo pasirašymo kanalo palikti negalima.
+
+2.11. Programų katalogas
+Failas: src/kiro_crew/apps/official_catalog.py
+Paruoštame kode ir Windows bilde bazė jau https://efmleads.com/api/apps/.
+Gyvame gateway pakete bazė tebėra https://apps.crew.kiro.dev/.
+Komponentuose ir dokumentuose senas vardas dar paminėtas.
+Veiksmas: gyvą paketą pakeisti. Paruoštame kode ištrinti likusius sakinio paminėjimus, kad kitas bildas jų nebeišneštų.
+
+2.12. Diegimo dokumentacijos nuoroda
+Failas: src/kiro_crew/kiro_prerequisite.py
+Paruoštame kode OFFICIAL_INSTALL_DOCS_URL = https://efmleads.com.
+Windows bilde ir gyvame pakete tebėra https://kiro.dev/cli/.
+Veiksmas: gyvą paketą ir kitą bildą statyti iš paruošto kodo tik po to, kai 2.5 ir 2.8 jau pakeisti. Vienos nuorodos pakeitimo neužtenka, kol ekranas ir CLI paieška lieka.
+
+2.13. Atnaujinimų tikrinimas
+Failas: website/electron/auto-update.js
+Paruoštame kode ir Windows app.asar:
+- DEFAULT_FEED_BASE = https://efmleads.com/go/updates/feed
+- DOWNLOAD_BASE tuščias
+- EFM_MUTE_KIRO_UPDATES = true, todėl gamyboje check, download ir install nieko nedaro
+Komentaruose tebėra updates.crew.kiro.dev ir download.crew.kiro.dev.
+Veiksmas: komentarus ištrinti. Patį nutildymą palikti, kol savas atnaujinimų kanalas bus tikras. Tuščias DOWNLOAD_BASE reiškia, kad rankinis diegimo URL nedaromas.
+
+2.14. cli.sh diegiklis
+Failas: cli.sh
+Jei KIROCREW_CDN_BASE tuščias, skriptas išeina su klaida ir seno CDN nebekviečia.
+Pagalbos tekste tebėra vykdytina išvaizda: curl -fsSL https://download.crew.kiro.dev/cli.sh | sh
+Ta eilutė yra pagalbos citatoje, ne vykdoma šaka.
+Susiję: install.sh, minimal_install.sh, setup.sh, packaging/efm-go-p01-verify.sh.
+Veiksmas: pagalbos tekstą pakeisti. Seno adreso citata ištrinama.
+
+2.15. AWS kontrolės image
+Failas: src/kiro_crew/apps/builtins/aws_control/crew/runtime/Dockerfile
+Prieš atsisiuntimą iš prod.download.cli.kiro.dev yra exit 1. Žemiau esantis diegimas nepasiekiamas. Dėl to šitas image nebesusibildo.
+Veiksmas: ištrinti visą svetimo CLI diegimo bloką, ne palikti sulaužytą exit.
+
+2.16. Atsarginės kopijos išvalymas
+Failas: src/kiro_crew/efm_backup.py
+VENDOR_ENDPOINT_PATTERNS laiko senus adresus kaip tai, ką atkuriant reikia išmesti: crew.kiro.dev, du CloudFront hostus, github.com/kirodotdev/KiroCrew.
+Žemiau teste yra dirbtinis config su tais pačiais adresais.
+Veiksmas: sąrašą, kuris išmeta svetimus adresus, palikti kol senos kopijos dar atkuriamos. Testo dirbtinį config laikyti testu, ne produkto durimis.
+
+2.17. Kilmės nuorodos kode, kuris keliauja pas vartotoją
+Šitie failai paruoštame kode ir Windows backend kopijoje veda į github.com/kirodotdev/KiroCrew:
+- src/kiro_crew/builtin_skills/feature-request/SKILL.md
+- src/kiro_crew/builtin_skills/debug-gateway/SKILL.md
+- src/kiro_crew/builtin_skills/theme-pack-authoring/SKILL.md
+- src/kiro_crew/builtin_skills/kirocrew-dev/babysit/SKILL.md
+- src/kiro_crew/config/prompt.md
+- src/kiro_crew/cloud/templates/kirocrew-ec2.yaml numatytas git klonas
+- docker/Dockerfile etiketė
+- website/src/utils/docsLink.ts
+- website/src/prompts/featureRequest.ts
+- website/src/pages/DeveloperPage.tsx
+Gyvame dist tie patys vardai yra šituose jau pastatytuose failuose:
+- assets/CapabilitiesPage-CsNDShiZ.js
+- assets/DeveloperPage-DV1WIWdx.js
+- assets/DiscoverPage-DA21xf95.js
+- assets/MarkdownRenderer-D2bKff-s.js
+- assets/SettingsPage-2GV_TLIJ.js
+- assets/main-70Cvx-Mz.js
+- assets/startupVideoGate-D7s-nnWm.js
+Veiksmas: pakeisti į savas nuorodas arba ištrinti. Issue ir PR šablonai neturi vesti į svetimą repozitoriją.
+
+2.18. Katalogo vardas ir Python paketo vardas
+Kelias /opt/efm/kirocrew-ui ir paketas kiro_crew, paleidimas kirocrew, duomenų namai /root/.kiro.
+Windows backend katalogas vadinasi kirocrew-backend.
+Veiksmas: pakeisti su tiltu ten, kur seno kelio ištrynimas nebeatidarytų senų sesijų. Tiltas nėra priežastis vardą palikti ekrane, pakete ar naujame kelyje.
+
+2.19. Kiti šaltinio failai, kuriuose kiro.dev dar stovi produkto kode
+Šitie nėra testai. Juos reikia pereiti ir ištrinti arba pakeisti nuorodą:
+- src/kiro_crew/acp/_dispatch.py
+- src/kiro_crew/acp/client.py
+- src/kiro_crew/acp/harness/_common.py
+- src/kiro_crew/acp/harness/codex.py
+- src/kiro_crew/acp/runtime.py
+- src/kiro_crew/acp/session_handle.py
+- src/kiro_crew/acp/session_provider.py
+- src/kiro_crew/acp/skill_projection.py
+- src/kiro_crew/acp/types.py
+- src/kiro_crew/agent_sdk/backend_cards.py
+- src/kiro_crew/agent_sdk/backends.py
+- src/kiro_crew/agent_sdk/capabilities.py
+- src/kiro_crew/context.py
+- src/kiro_crew/dashboard/chat_runner.py
+- src/kiro_crew/dashboard/chat_turn/mcp_session.py
+- src/kiro_crew/dashboard/handlers/steering.py
+- src/kiro_crew/hooks.py
+- src/kiro_crew/providers/acp.py
+- src/kiro_crew/session.py
+- website/src/components/KiroAccountModal.tsx
+- website/src/components/ModelDropdownList.tsx
+- website/src/pages/chat/SubagentProgressBar.tsx
+- website/src/shell/nav/railChrome.tsx
+- website/electron/scripts/local-feed-server.js
+- website/electron/scripts/stage3-autoupdate-test.sh
+Dalis jų yra komentarai ir dokumentų nuorodos. Dalis yra sesijos ir ACP kelias. Kol neperžiūrėta eilutė po eilutės, jų nelaikyti švariais.
+
+2.20. Testai, dokumentai, CI ir pagalbiniai įrankiai
+Skaičiai šaltinyje, ne gyvame bilde:
+- kiro.dev: 184 failai, 618 kartų. Iš jų SRC 27 failai, testai 55, dokumentai 54.
+- kirodotdev: 363 failai, 1153 kartų. Iš jų SRC 21, testai 131, dokumentai 104, CI 26.
+- crew.kiro.dev: testuose 18 failų, dokumentuose 8, CI 4.
+- amazonaws.com: 70 failų. Dalis yra AWS diegimo šablonai, dalis testų išgalvoti bucket vardai.
+- cloudfront.net: 57 failai. Dalis yra URL saugumo testai su išgalvotais d123.cloudfront.net. Tikri seno platinimo hostai efm_backup sąraše yra d175o3ylxqum0e.cloudfront.net ir d3j0sthz5doyui.cloudfront.net.
+Įrankiai, kurie vardą tik tikrina, ne kviečia:
+- tools/vendor_verifier.sh
+- tools/brand_verifier.py
+- tools/backend-brand-clean.py
+- tools/backend-brand-inventory.py
+Veiksmas: testus ir dokumentus pakeisti kartu su produkto kodu, kad jie nebereikalautų seno adreso. Vien dokumentų valymas produkto durų neuždaro.
+
+
+3. Kas jau pakeista paruoštame kode, bet sename sluoksnyje dar gyva
+
+Paruoštas kodas b0ba186:
+- portalas ir socialinis auth atjungti, nebent EFM_ALLOW_KIRO_AUTH=1
+- valdymo plokštė atjungta, nebent EFM_ALLOW_KIRO_CONTROL_PLANE=1
+- katalogas efmleads.com/api/apps/
+- diegimo dokumentacija efmleads.com
+- atnaujinimų bazė efmleads.com/go/updates/feed, tikrinimas nutildytas
+- cli.sh be savo CDN išeina su klaida
+- AWS kontrolės image išeina su klaida prieš svetimą atsisiuntimą
+
+Gyvas gateway paketas ir Windows bildas 2026-10-12 šitų atjungimų neturi, išskyrus tai, kad Windows bildas jau turi efmleads katalogą ir nutildytą atnaujinimą. Portalas, socialinis auth ir valdymo plokštė jame tebėra senieji.
+
+Gyvas svetainės dist 2026-10-13 yra naujesnis už EXE ir vėl rodo cli.kiro.dev bei app.kiro.dev. EXE app.asar tų dviejų adresų neturi.
+
+
+4. Ko šitas sąrašas neįrodo
+
+- ChatGPT perskaitymo niekas nepatikrino.
+- EXE iš naujo nestatytas. Šitas dokumentas nestato bildo.
+- Gateway neperkrautas.
+- Produkto kodas šituo dokumentu nepakeistas.
+- READY_FOR_FOUNDER_INSTALL lieka NO.
+- implemented nėra accepted.
+- Žodis atskiro lietuvių kalboje nėra senas ženklas.
+- LICENSE ir NOTICE lieka kaip kilmės žyma, ne kaip produkto vardas.

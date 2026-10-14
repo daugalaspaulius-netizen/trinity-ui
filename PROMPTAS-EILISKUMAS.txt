@@ -1,0 +1,141 @@
+SAVININKAS: CURSOR
+
+PROMPTAS SAU. INVENTORIZACIJOS EILĖ.
+Data: 2026-10-14
+Šitas tekstas yra vykdymo eilė man pačiam. Jis yra žemiau KANONAS.md. Jei kas nors čia prieštarauja kanonui, laimi kanonas. Founderio sprendimas SPRENDIMAS-INVENTORIZACIJA-20261014 yra aukščiau šitos eilės.
+
+Founderis 2026-10-14 pasakė pradėti. Vykdymas eina šita eile. Commit draudimas lieka.
+
+Privalomas sąrašas, iš kurio nieko nepalikti: Kiro Krev. Kodas, kuri reikia pakeisti arba ištrinti.txt
+Etapų suskirstymas, ką kartu ir ką atskirai: ETAPAI-INVENTORIZACIJA.txt
+Abu failai yra /opt/efm/vault/gamyba/efm-go/
+
+Bendros taisyklės visai eilei
+
+1. Prieš pirmą pakeitimą perskaityti KANONAS.md.
+2. Produkto nekomituoti. INVENTORIZACIJA-COMMIT=DRAUDZIAMA galioja, kol founderis kanone pats tą draudimą nuima. Etapas nėra commit. --no-verify draudžiama.
+3. Vault šakos cursor/n8n-3658-dns-9530 nepushinti. Force push nedaryti.
+4. Gateway proceso neperkrauti ir nežudyti. EXE nestatyti ir neperrašyti. Gyvo dist ir įdiegto paketo ranka neredaguoti.
+5. Neliesi OpenCode backend šakos, integration worktree ir OpenCode užduočių logų.
+6. ACTIVE_TASK nepalikti kitos. READY_FOR_FOUNDER_INSTALL lieka NO. implemented nėra accepted. Produkto nevadinti baigtu.
+7. Kur ištrynus programa nebeatsidarytų, dėti savo kodą ir tiltą senai sesijai. Tiltas nėra priežastis palikti seną vardą.
+8. Aklo žodžio keitimo visame medyje nedaryti. Lietuviškas žodis atskiro nėra senas ženklas. Draudžiantis sakinys negali apsiversti į priešingą.
+9. LICENSE ir NOTICE lieka kaip kilmės žyma, ne kaip produkto vardas.
+10. Billingas iš tiekėjo tokeno kainos, prepaid. Svetimo kredito API nelieka.
+11. Po kiekvieno etapo į vault logą įrašyti, kas tame etape pakeista, ir sustoti prieš kitą etapą tik tam, kad patikrinti, jog durys uždarytos. Tada eiti toliau. Nekomituoti.
+12. Kalba founderiu lietuvių.
+
+Eilė. Ką po ko darau
+
+0. Pasiruošimas, be kodo keitimo.
+Perskaitau kanoną, šalinimo sąrašą ir etapų failą. Patikrinu, kad produkto commit hukas vis dar blokuoja. Užsirašau gyvo gateway PID ir jo neliečiu. Tik tada etapas 1.
+
+1. Etapas 1, vienas praėjimas, šita vidine eile. Svetimas agento binaras.
+Pirma uždarau paleidimą, paskui ekraną, paskui atsisiuntimą. Atvirkščiai palikčiau veikiančią durį.
+1.1. src/kiro_crew/kiro_cli.py. Paieška ir paleidimas nutrūksta. Savo kelias, jei be jo sesija neatsidaro.
+1.2. website/electron/gateway-env.js. Aplinkos rodyklė į svetimą katalogą išnyksta.
+1.3. src/kiro_crew/acp/client.py ir src/kiro_crew/acp/harness/kas.py. Tik ta vieta, kur paleidžiamas tas binaras.
+1.4. src/kiro_crew/kiro_prerequisite.py. Diegimo kreipinys į svetimą dokumentaciją išnyksta.
+1.5. website/src/components/KiroPrerequisiteGate.tsx. Komandos į cli.kiro.dev išnyksta.
+1.6. packaging/build-desktop.sh visas failas vienu praėjimu: atsisiuntimo skyrius ir programos tapatybės eilutės tame pačiame faile.
+1.7. packaging/kiro-cli-version ir packaging/kiro-cli-sha256. Pin išnyksta kartu su atsisiuntimu.
+1.8. .github/workflows/build-desktop.yml ir .github/workflows/build-windows.yml. Tik eilutės, kurios perduoda svetimą CLI versiją. Windows pasirašymo rolės lieka 3 etapui.
+1.9. docker/Dockerfile. Atsisiuntimas išnyksta. Kilmės etiketė pasikeičia.
+1.10. .github/workflows/publish-docker.yml. Versijos perdavimas išnyksta.
+1.11. src/kiro_crew/cloud/templates/kirocrew-ec2.yaml atsisiuntimas, src/kiro_crew/cloud/ec2.py ir src/kiro_crew/cloud/iam.py leidžiamas hostas.
+1.12. src/kiro_crew/apps/builtins/aws_control/crew/runtime/Dockerfile. Visas nepasiekiamas diegimo blokas išnyksta, ne paliekamas exit.
+Tada patikrinu, kad šituose failuose nebeliko atsisiuntimo adresų desktop-release.q.us-east-1.amazonaws.com, prod.download.cli.kiro.dev, cli.kiro.dev. Nekomituoju. Einu į 2.
+
+2. Etapas 2, vienas praėjimas, šita vidine eile. Paskyra ir kreditas.
+2.1. src/kiro_crew/dashboard/handlers/kiro_usage_api.py. POST į codewhisperer ir q išnyksta. Likutis turi eiti iš mūsų tiekėjo.
+2.2. src/kiro_crew/auth/login/endpoints.py. Portalo likučiai, socialinis servisas, oidc, Builder ID start adresai ir codewhisperer leidimai išnyksta.
+2.3. src/kiro_crew/auth/login/control_plane.py. Ne tik env vartai. Pats POST ir management hostai išnyksta.
+2.4. website/src/components/KiroAccountModal.tsx. Nuoroda į svetimą paskyrą išnyksta.
+Nekomituoju. Einu į 3.
+
+3. Etapas 3, vienas praėjimas. Tapatybė ir atnaujinimas. build-desktop.sh čia nebekartoti, jis jau sutvarkytas 1.6.
+3.1. website/electron/main.js
+3.2. packaging/signing/generate-manifest.py
+3.3. packaging/signing/manifest-template.json
+3.4. packaging/signing/sign-dmg.sh
+3.5. .github/workflows/sign-and-notarize.yml
+3.6. .github/workflows/build-windows.yml pasirašymo rolės ir bucket vardai
+3.7. src/kiro_crew/computer_use/policy.py
+3.8. website/electron/auto-update.js tik komentarai su senu hostu. Nutildymas ir tuščia baitų bazė lieka, kol savas kanalas tikras.
+Nekomituoju. Einu į 4.
+
+4. Etapas 4, po vieną failą, šita eile. Platinimo tekstas.
+4.1. cli.sh pagalbos citata
+4.2. install.sh
+4.3. minimal_install.sh
+4.4. setup.sh
+4.5. packaging/efm-go-p01-verify.sh
+4.6. src/kiro_crew/apps/official_catalog.py tik likę sakiniai. Bazė, jei jau efmleads.com, neliečiama kaip duris.
+Nekomituoju. Einu į 5.
+
+5. Etapas 5, po vieną failą, šita eile. Nuorodos į seną repozitoriją.
+5.1. src/kiro_crew/builtin_skills/feature-request/SKILL.md
+5.2. src/kiro_crew/builtin_skills/debug-gateway/SKILL.md
+5.3. src/kiro_crew/builtin_skills/theme-pack-authoring/SKILL.md
+5.4. src/kiro_crew/builtin_skills/kirocrew-dev/babysit/SKILL.md
+5.5. src/kiro_crew/config/prompt.md
+5.6. website/src/utils/docsLink.ts
+5.7. website/src/prompts/featureRequest.ts
+5.8. website/src/pages/DeveloperPage.tsx
+5.9. EC2 šablono git klono numatytasis adresas, tik jei 1.11 jo nepaliko.
+Nekomituoju. Einu į 6.
+
+6. Etapas 6, po vieną failą. Prieš keitimą perskaitau failą. Jei eilutė yra komentaras ar dokumento nuoroda, ją išimu. Jei eilutė laiko sesiją, keičiu savu kodu ir tiltu. Aklo pakeitimo nėra.
+Eilė:
+6.1. src/kiro_crew/acp/_dispatch.py
+6.2. src/kiro_crew/acp/harness/_common.py
+6.3. src/kiro_crew/acp/harness/codex.py
+6.4. src/kiro_crew/acp/runtime.py
+6.5. src/kiro_crew/acp/session_handle.py
+6.6. src/kiro_crew/acp/session_provider.py
+6.7. src/kiro_crew/acp/skill_projection.py
+6.8. src/kiro_crew/acp/types.py
+6.9. src/kiro_crew/agent_sdk/backend_cards.py
+6.10. src/kiro_crew/agent_sdk/backends.py
+6.11. src/kiro_crew/agent_sdk/capabilities.py
+6.12. src/kiro_crew/context.py
+6.13. src/kiro_crew/dashboard/chat_runner.py
+6.14. src/kiro_crew/dashboard/chat_turn/mcp_session.py
+6.15. src/kiro_crew/dashboard/handlers/steering.py
+6.16. src/kiro_crew/hooks.py
+6.17. src/kiro_crew/providers/acp.py
+6.18. src/kiro_crew/session.py
+6.19. website/src/components/ModelDropdownList.tsx
+6.20. website/src/pages/chat/SubagentProgressBar.tsx
+6.21. website/src/shell/nav/railChrome.tsx
+6.22. website/electron/scripts/local-feed-server.js
+6.23. website/electron/scripts/stage3-autoupdate-test.sh
+Jei 1.3 jau pakeitė client.py ir kas.py paleidimą, čia tikrinu tik likusius sakinius, antro paleidimo perrašymo nedarau.
+Nekomituoju. Einu į 7.
+
+7. Etapas 7, tik po 1–3. Katalogais, ne po atsitiktinę eilutę.
+7.1. Testai, kuriuose dar reikalaujama seno adreso.
+7.2. docs/
+7.3. .github šablonai ir likę workflow sakiniai.
+7.4. Paskutiniai šitame etape įrankiai: tools/vendor_verifier.sh, tools/brand_verifier.py, tools/backend-brand-clean.py, tools/backend-brand-inventory.py. Jie tikrina jau pakeistą kodą.
+Nekomituoju. Einu į 8.
+
+8. Etapas 8, vienas etapas, ne po failą. Paketo ir katalogo vardas. Paskutinis kodo etapas.
+8.1. Python paketas ir importai kartu.
+8.2. Paleidimo vardas.
+8.3. Duomenų namų kelias su tiltu senai sesijai ir nustatymams.
+8.4. Windows backend katalogo vardas.
+8.5. Katalogas /opt/efm/kirocrew-ui tik kai importai jau eina nauju vardu.
+Nekomituoju. Einu į 9.
+
+9. Etapas 9, atskirai, vėlai.
+src/kiro_crew/efm_backup.py senų adresų išmetimo sąrašas lieka, kol senos kopijos dar atkuriamos. Kai kopijos nebelaiko seno adreso, sąrašą ir testo dirbtinį config sutvarkau kartu. Anksčiau šito etapo nedarau.
+Nekomituoju.
+
+10. Etapas 10 nedaromas šituo promptu.
+Gyvo dist, įdiegto paketo ir Windows EXE ranka neliesti ir nestatyti. Juos keisti tik atskiru founderio įsakymu statyti, kai 1–9 šaltinyje padaryta. Iki to gateway lieka gyvas.
+Commit vis tiek draudžiamas, kol founderis kanone nuima INVENTORIZACIJA-COMMIT=DRAUDZIAMA.
+
+Pabaiga
+
+Kai 1–9 padaryta, founderiu lietuviškai parašau, kas pakeista, ko nepadariau, ir kad commit neįvyko. Produkto baigtu nevadinu.
